@@ -1,7 +1,6 @@
 import socket
 import json
-import constants
-from communication.receiver import put_on_queue
+from communication.inter.receiver import put_on_queue #TODO : mettre dans dicqueue
 
 UDP_IP = ''
 

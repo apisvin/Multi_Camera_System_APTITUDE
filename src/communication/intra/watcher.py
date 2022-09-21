@@ -1,9 +1,8 @@
 import json
 from queue import Queue
-from communication.neighbourhood import *
-from communication.agent import *
+from utils.neighbourhood import *
+from utils.neighbour import *
 import time
-import constants
 
 class watcher():
     """
@@ -33,7 +32,7 @@ class watcher():
         Lorsqu un message est recu, il update l age du voisin correspond 
         """
         while self.stopFlag.is_set()==False:
-            received = self.dicqueue["Qtowatcher"].get()
+            received = self.dicqueue.Qtowatcher.get()
             #print("alive received from agentID = ", received["source"]["agentID"])
             self.neighbourhood.update_agent_age(received["source"]["agentID"])
         print("stopped")

@@ -1,7 +1,6 @@
 import time
 import json
-from communication.agent import *
-import constants
+from utils.neighbour import *
 import threading
 
 class neighbourhood:

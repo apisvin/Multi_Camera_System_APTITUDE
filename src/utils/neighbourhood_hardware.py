@@ -1,14 +1,13 @@
-import constants
 from queue import Queue
 from collections import deque
 import threading
 import time
 import sys
 import select
-from communication.sender import *
-from communication.receiver import *
-from communication.identification import *
-from communication.neighbourhood import *
+from communication.inter.sender import *
+from communication.inter.receiver import *
+from communication.intra.identification import *
+from utils.neighbourhood import *
     
 class neighbourhood_hardware:
     

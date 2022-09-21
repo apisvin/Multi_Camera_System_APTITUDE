@@ -1,10 +1,9 @@
 import json
 import mailbox
 from queue import Queue
-from communication.neighbourhood import *
-from communication.agent import *
+from utils.neighbourhood import *
+from utils.neighbour import *
 import time
-import constants
 
 class identification:
     """
@@ -31,14 +30,14 @@ class identification:
         """
         while(not self.neighbourhood.myself.DNS): #envoyer des init jusqu a reception du ackinit
             self.init() #envoyer un msg init
-            if(not(self.dicqueue["Qtoidentification"].empty())):
-                received = self.dicqueue["Qtoidentification"].get()
+            if(not(self.dicqueue.Qtoidentification.empty())):
+                received = self.dicqueue.Qtoidentification.get()
                 if(received["method"]=="ackinit"):
                     self.received_ackinit(received)
                     
-        self.dicqueue["Qtoidentification"] = Queue() #reset a new queue with bigger buffer
+        self.dicqueue.Qtoidentification = Queue() #reset a new queue with bigger buffer
         while self.stopFlag.is_set()==False:
-            received = self.dicqueue["Qtoidentification"].get()
+            received = self.dicqueue.Qtoidentification.get()
             #casing of msg
             if(received["method"]=="init" and len(self.neighbourhood.get_children())<2):
                 print("init received")
@@ -71,7 +70,7 @@ class identification:
                 "destination" : "broadcast",
                 "method" : "init",
                 "spec" : {}}
-        self.dicqueue["Qtosendbroadcast"].put(msg)
+        self.dicqueue.Qtosendbroadcast.put(msg)
         time.sleep(2) #wait response
         
     def ackinit(self, receptedmsg):
@@ -100,7 +99,7 @@ class identification:
                 "destination" : newagent.__dict__,
                 "method" : "ackinit",
                 "spec" : {}}
-            self.dicqueue["Qtosendunicast"].put(msg)
+            self.dicqueue.Qtosendunicast.put(msg)
             print("New car : ", newagent.__dict__)
         #newagent is one level under and is not known
         elif(newagent.level + 1 == self.neighbourhood.myself.level):# and self.neighbourhood.IP_is_not_in_children(newagent)):
@@ -114,7 +113,7 @@ class identification:
                 "destination" : newagent.__dict__,
                 "method" : "ackinit",
                 "spec" : {}}
-            self.dicqueue["Qtosendunicast"].put(msg)
+            self.dicqueue.Qtosendunicast.put(msg)
         
     def received_ackinit(self, receptedmsg):
         """
@@ -136,7 +135,7 @@ class identification:
                     "destination" : parent.__dict__,
                     "method" : "ackparent",
                     "spec" : {}}
-            self.dicqueue["Qtosendunicast"].put(msg)
+            self.dicqueue.Qtosendunicast.put(msg)
         
     def received_ackparent(self, receptedmsg):
         """
@@ -180,7 +179,7 @@ class identification:
                 "method" : "look",
                 "spec" : {}
             }
-        self.dicqueue["Qtosendbroadcast"].put(msg)
+        self.dicqueue.Qtosendbroadcast.put(msg)
         
     def acklook(self, receptedmsg):
         """
@@ -205,7 +204,7 @@ class identification:
                 "method" : "acklook",
                 "spec" : {"child" : newagent.__dict__}
             }
-        self.dicqueue["Qtosendunicast"].put(msg)
+        self.dicqueue.Qtosendunicast.put(msg)
         
         
         
@@ -234,7 +233,7 @@ class identification:
                 "method" : "update",
                 "spec" : {"children" : self.neighbourhood.get_children()}
         }
-        self.dicqueue["Qtosendunicast"].put(msg)
+        self.dicqueue.Qtosendunicast.put(msg)
     
     #change new DNS of master
     def ackupdate(self, receptedmsg):
@@ -257,7 +256,7 @@ class identification:
         receptedmsg["source"] = self.neighbourhood.myself.__dict__
         receptedmsg["destination"] = self.neighbourhood.get_parent().__dict__
         if receptedmsg["destination"] != 0:
-            self.dicqueue["Qtosendunicast"].put(receptedmsg)
+            self.dicqueue.Qtosendunicast.put(receptedmsg)
         
         
     
