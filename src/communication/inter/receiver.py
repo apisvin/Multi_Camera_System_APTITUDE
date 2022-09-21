@@ -58,6 +58,7 @@ class receiver():
         PORT = 8000
         #create socket in unicast
         s_unicast = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s_unicast.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s_unicast.bind((UDP_IP,PORT))
         while(True):
             msgReceived, address = s_unicast.recvfrom(8192)
@@ -81,34 +82,32 @@ def put_on_queue(dictReceived, dicqueue):
     """
     if(dictReceived["method"] == "init"):
         #dictReceived["agent"]["ip"]=address[0]
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     elif(dictReceived["method"] == "ackinit"):   
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
         
     elif(dictReceived["method"] == "ackparent"):    
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "quit"):
         #an other agent leave the network -> launch ackquit
         dictReceived["method"] = "ackquit"
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "look"):
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "acklook"):
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "update"):
-        dicqueue["Qtoidentification"].put(dictReceived)
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "alive"):
-        dicqueue["Qtowatcher"].put(dictReceived)
+        dicqueue.Qtowatcher.put(dictReceived)
         
     if(dictReceived["method"] == "detect"):
-        dicqueue["Qfromrectokalman"].put(dictReceived)
+        dicqueue.Qfromrectokalman.put(dictReceived)
         
-    if(dictReceived["method"] == "ping" or dictReceived["method"] == "pong"):
-        dicqueue["Qtotestperformance"].put(dictReceived)
     

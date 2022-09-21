@@ -47,14 +47,14 @@ class watcher():
                     "destination" : child.__dict__,
                     "method" : "alive",
                     "spec" : {}}
-                self.dicqueue["Qtosendunicast"].put(msg)
+                self.dicqueue.Qtosendunicast.put(msg)
             parent = self.neighbourhood.get_parent()
             if(parent != 0): #parent exists
                 msg = {"source" : self.neighbourhood.myself.__dict__,
                     "destination" : parent.__dict__,
                     "method" : "alive",
                     "spec" : {}}
-                self.dicqueue["Qtosendunicast"].put(msg)
+                self.dicqueue.Qtosendunicast.put(msg)
             time.sleep(self.delay) #wait delay seconds
         print("stopped")
             
@@ -73,13 +73,13 @@ class watcher():
                         "destination" : self.neighbourhood.myself.__dict__,
                         "method" : "quit",
                         "spec" : {}}
-                    self.dicqueue["Qtoidentification"].put(msg)
+                    self.dicqueue.Qtoidentification.put(msg)
             parent = self.neighbourhood.get_parent()
             if(parent != 0 and time.time() - parent.age > 3*self.delay): #parent exists
                 msg = {"source" : parent.__dict__,
                     "destination" : self.neighbourhood.myself.__dict__,
                     "method" : "quit",
                     "spec" : {}}
-                self.dicqueue["Qtoidentification"].put(msg)
+                self.dicqueue.Qtoidentification.put(msg)
             time.sleep(3) #wait 5 seconds
         print("stopped")

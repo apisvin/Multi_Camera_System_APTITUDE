@@ -40,18 +40,12 @@ def main():
     neighbourhood_h.add(task1)
     threading.Thread(target=task1.launch, args=()).start()
     
-    
+    task2 = launcher(agenttype="blank", level=1, DNS="UA", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast)
+    neighbourhood_h.add(task2)
+    threading.Thread(target=task2.launch, args=()).start()
     
     time.sleep(3)
-    #print("Number of active thread = ", threading.active_count())
-    while True:
-        i = input("Type what you want to do (kill or create) : ")
-        if(i == "kill task1"):
-            task1.stopFlag.set()
-        elif(i=="kill task2"):
-            task2.stopFlag.set()
-        time.sleep(2)
-        print("Number of active thread = ", threading.active_count())
+    print("end main")
 
 if __name__ == "__main__":
     main()

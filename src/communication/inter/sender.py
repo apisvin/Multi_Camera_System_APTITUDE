@@ -139,7 +139,7 @@ class sender:
                 
             #And send to network
             msgJson = json.dumps(msg)
-            addr = (constants.ADDR_BROADCAST, PORT)
+            addr = ('192.168.0.255', PORT)
             s_broadcast.sendto(msgJson.encode(), addr)
                
     

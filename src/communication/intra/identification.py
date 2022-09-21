@@ -10,19 +10,17 @@ class identification:
     cette classe de permet de lancer la tache a la creation d un arbre dynamique compose des agents dans le reseau
     """
     
-    def __init__(self, stopFlag, neighbourhood, dicqueue, display=False):
+    def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
         stopFlag : un flag permettant d arreter la tache en cours 
         neighbourhood : classe contenant l ensemble des agents dans le voisinage de l agent qui a lance identification
-        dicqueue : dictionnaire de queue contenant l ensemble des queues qui permettent la communication entre taches
-        display : boolean permettant l'affichage continu des variables 
+        dicqueue : dictionnaire de queue contenant l ensemble des queues qui permettent la communication entre taches 
         """
         self.stopFlag = stopFlag
         
         self.dicqueue = dicqueue #liste des queues
                 
         self.neighbourhood = neighbourhood
-        self.display       = display
         
     def loop_identification(self):
         """
@@ -80,7 +78,7 @@ class identification:
         (sa nouvelle DNS, ID, ...)
         """
         dictagent = receptedmsg["source"]
-        newagent = agent(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
+        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
         #for intern communication
         old_agentID = dictagent["agentID"]
         #condition for Xavier Claude and its cars
@@ -126,10 +124,9 @@ class identification:
             dictmyself = receptedmsg["destination"]
             self.neighbourhood.myself.update_all_DNS(dictmyself["DNS"], dictmyself["masterDNS"])
             dictparent = receptedmsg["source"]
-            parent = agent(ip=dictparent["ip"], agenttype=dictparent["agenttype"], level=dictparent["level"], hardwareID=dictparent["hardwareID"])
+            parent = neighbour(ip=dictparent["ip"], agenttype=dictparent["agenttype"], level=dictparent["level"], hardwareID=dictparent["hardwareID"])
             parent.update_DNS(dictparent["DNS"])
             self.neighbourhood.update_parent(parent)
-            print("myDNS = ", self.neighbourhood.myself.DNS)
             #send ack_parent
             msg = {"source" : self.neighbourhood.myself.__dict__,
                     "destination" : parent.__dict__,
@@ -142,14 +139,14 @@ class identification:
         le message ackparent recu permet de mettre a jour la liste d 'enfant avec le nouvel enfant 
         """
         dictagent = receptedmsg["source"]
-        newagent = agent(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
+        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
         newagent.DNS = dictagent["DNS"]
         newagent.agentID = dictagent["agentID"]
         newagent.masterDNS = dictagent["masterDNS"]
         newagent.masterID = dictagent["masterID"]
         # Update list of child
         self.neighbourhood.update_children(newagent)
-        print("New child : ", newagent.__dict__)
+        print(self.neighbourhood.myself.DNS + "'s new child is " + newagent.DNS)
                 
 
     def quit(self, receptedmsg):
@@ -187,8 +184,8 @@ class identification:
         les parametres de l 'agent source sont modifies afin qu il puisse se lier au nouveau parent 
         """
         dictagent = receptedmsg["source"]
-        newagent = agent(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
-        #modify DNS of the new child TO MODIFY !!!!!!!! NOT GENERAL it s specific for this case
+        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
+
         DNSlist = dictagent["DNS"].split(".")
         separator = "."
         newDNS = separator.join([DNSlist[0], self.neighbourhood.myself.DNS])
@@ -196,7 +193,6 @@ class identification:
         newagent.update_all_DNS(newDNS, dictagent["masterDNS"])
         #add new agent to childhood
         self.neighbourhood.update_children_without_level(newagent)
-        print("New childhood : ")
         self.neighbourhood.printAllchildren()
         #send resp
         msg = {"source" : self.neighbourhood.myself.__dict__,
@@ -216,10 +212,10 @@ class identification:
         # update information from new parent
         self.neighbourhood.myself.update_DNS(receptedmsg["destination"]["DNS"])
         newParentdict = receptedmsg["source"]
-        newParent = agent(ip=newParentdict["ip"], agenttype=newParentdict["agenttype"], level=newParentdict["level"], hardwareID=newParentdict["hardwareID"])
+        newParent = neighbour(ip=newParentdict["ip"], agenttype=newParentdict["agenttype"], level=newParentdict["level"], hardwareID=newParentdict["hardwareID"])
         newParent.update_all_DNS(newDNS=newParentdict["DNS"], newmasterDNS=newParentdict["masterDNS"])
         self.neighbourhood.update_parent_without_level(newParent)
-        print("New parent : ", self.neighbourhood.get_parent().__dict__)
+        print("New parent of " +  self.neighbourhood.myself.DNS, " is " + self.neighbourhood.get_parent().DNS)
         #launch update to tell children that my DNS has changed
         self.update()
         

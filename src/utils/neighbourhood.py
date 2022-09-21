@@ -107,10 +107,10 @@ class neighbourhood:
                 self.lockChildren.release()
      
     def printAllchildren(self):
-        print('Liste des enfants : ')
+        print('Liste des enfants de ', self.myself.DNS)
         i=1
         for n in self.children:
-            print(n.__dict__)
+            print(n.DNS)
             i=i+1
         print()
         
