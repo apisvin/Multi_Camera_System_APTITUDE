@@ -13,6 +13,5 @@ class dicqueue:
         self.Qtoidentification =    Queue()
         self.Qtowatcher =           Queue()
         self.Qfromrectokalman =     Queue()
-        self.Qtosendbroadcast =     Queue()
         self.Qfromtrackers =        Queue()
         self.Qtoplot =              Queue()
