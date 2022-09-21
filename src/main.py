@@ -1,5 +1,7 @@
 from queue import Queue
 from collections import deque
+from tkinter import *
+from tkinter import ttk
 import threading
 import time
 import sys
@@ -13,6 +15,7 @@ from utils.launcher import *
 from utils.neighbour import *
 from utils.neighbourhood import *
 from utils.neighbourhood_hardware import *
+from GUI.GUI import *
 
 Qtosendunicast, Qtosendbroadcast = Queue(), Queue()
 neighbourhood_h = neighbourhood_hardware()
@@ -35,17 +38,9 @@ def launch_hardware_com(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast
 def main():
     launch_hardware_com(neighbourhood_h, Qtosendunicast, Qtosendbroadcast)
     
+    app = App(neighbourhood_h, Qtosendunicast, Qtosendbroadcast)
+    app.mainloop()
     
-    task1 = launcher(agenttype="blank", level=0, DNS="", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast)
-    neighbourhood_h.add(task1)
-    threading.Thread(target=task1.launch, args=()).start()
-    
-    task2 = launcher(agenttype="blank", level=1, DNS="UA", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast)
-    neighbourhood_h.add(task2)
-    threading.Thread(target=task2.launch, args=()).start()
-    
-    time.sleep(3)
-    print("end main")
 
 if __name__ == "__main__":
     main()
