@@ -91,8 +91,7 @@ def put_on_queue(dictReceived, dicqueue):
         dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "quit"):
-        #an other agent leave the network -> launch ackquit
-        dictReceived["method"] = "ackquit"
+        #an other agent leave the network 
         dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "look"):

@@ -10,8 +10,12 @@ class App(Tk):
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
 
-        self.title("Add agent")
-        self.geometry("300x200")
+        self.title("Managing agentg")
+        self.geometry("300x500")
+
+        #Title
+        ttk.Label(self, text="").pack()
+        ttk.Label(self, text="ADD AGENT").pack()
 
         #DNS 
         DNS = StringVar()
@@ -50,15 +54,67 @@ class App(Tk):
         spin_box.pack()
 
 
-        #Button
-        button = ttk.Button(self, text='Add agent',command=lambda : self.button_clicked(DNS_entry.get(), agenttype.get(), level.get()))
+        #Button ADD
+        button = ttk.Button(self, text='Add agent',command=lambda : self.add_clicked(DNS_entry.get(), agenttype.get(), level.get()))
         button.pack()
 
-    def button_clicked(self, DNS, agenttype, level):
+        #Title
+        ttk.Label(self, text="").pack()
+        ttk.Label(self, text="REMOVE AGENT").pack()
+
+        #Listing agents 
+        self.list_agent = Listbox()
+        self.list_agent.pack()
+        self.index = 1
+
+        #Button REFRESH DNS
+        button = ttk.Button(self, text='Refresh DNS',command=lambda : self.refresh_clicked())
+        button.pack()
+
+        #Button REMOVE
+        button = ttk.Button(self, text='Remove agent',command=lambda : self.remove_clicked())
+        button.pack()
+
+
+
+    def add_clicked(self, DNS, agenttype, level):
         #launcher thread
         print("New agent created (type : "+ agenttype + ", DNS : " + DNS + ", level : " + level)
-        task = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast)
-        self.neighbourhood_h.add(task)
-        threading.Thread(target=task.launch, args=()).start()
+        l = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast)
+        self.neighbourhood_h.add(l)
+        threading.Thread(target=l.launch, args=()).start()
+        self.list_agent.insert(END, (agenttype, l.n.myself.hardwareID))
+
+        pass
+
+    def refresh_clicked(self):
+        self.list_agent.delete(0, self.list_agent.size()-1) #delete all lines 
+        for l in self.neighbourhood_h.tasks:
+            self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))
+
+
+    def remove_clicked(self):
+        index = self.list_agent.curselection()[0]           #get index of selected item in list_agent
+        removed_hardwareID = self.list_agent.get(index)[1]  #extract corresponding hardwareID
+        print("GUI : " + self.list_agent.get(index)[0] + " selected")
+
+        removed_launcher = self.neighbourhood_h.tasks[self.neighbourhood_h.get_index(removed_hardwareID)]
+        removed_neighbourhood = removed_launcher.n          # extract neighbourhood of quitting agent
+        print("GUI : " + removed_neighbourhood.myself.DNS + " is quitting")
+        msg = {"source" : removed_neighbourhood.myself.__dict__,
+            "destination" : "",
+            "method" : "quit",
+            "spec" : {}}
+        # send quit msg to all neighbours
+        for c in removed_neighbourhood.children:
+            msg["destination"] = c.__dict__
+            self.Qtosendunicast.put(msg)
+        if(removed_neighbourhood.parent != 0):
+            msg["destination"] = removed_neighbourhood.parent.__dict__
+            self.Qtosendunicast.put(msg)
+
+        self.list_agent.delete(index)                       #delete line
+
+
         pass
 

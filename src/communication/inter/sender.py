@@ -63,23 +63,10 @@ class sender:
                     msgJson = json.dumps(msg)
                     s_unicast.sendto(msgJson.encode(), addr)
                     
-                elif(msg["method"]=="quit"): #send quit to all children
-                    children = msg["spec"]["children"]
-                    msg["spec"].pop("children")
-                    parent = msg["spec"]["parent"]
-                    msg["spec"].pop("parent")
-                    # Send to all children
-                    for child in children:
-                        addr = (child.ip, PORT)
-                        msg["destination"] = child.__dict__
-                        msgJson = json.dumps(msg)
-                        s_unicast.sendto(msgJson.encode(), addr)
-                    # Send to parent
-                    if(parent!=0):
-                        addr = (parent.ip, PORT)
-                        msg["destination"] = parent.__dict__
-                        msgJson = json.dumps(msg)
-                        s_unicast.sendto(msgJson.encode(), addr)
+                elif(msg["method"]=="quit"): #send quit to all neighbours
+                    addr = (msg["destination"]["ip"], PORT)
+                    msgJson = json.dumps(msg)
+                    s_unicast.sendto(msgJson.encode(), addr)
                         
                 elif(msg["method"]=="acklook"):
                     addr = (msg["destination"]["ip"], PORT)
