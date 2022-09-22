@@ -1,6 +1,7 @@
 import socket
 import json
 from communication.inter.receiver import put_on_queue #TODO : mettre dans dicqueue
+import logging
 
 UDP_IP = ''
 
@@ -48,7 +49,6 @@ class sender:
             #check if the destination is on the same hardware
             if(self.neighbourhood_hardware.is_on_hardware(msg["destination"]["hardwareID"])):
                 #put msg directly on his receiver queue
-                #print("msg on same hardware for : ", msg["destination"]["DNS"])
                 dicqueue_dest = self.neighbourhood_hardware.get_dicqueue(msg["destination"]["hardwareID"])
                 put_on_queue(msg, dicqueue_dest)
             #send msg on network
@@ -63,7 +63,7 @@ class sender:
                     msgJson = json.dumps(msg)
                     s_unicast.sendto(msgJson.encode(), addr)
                     
-                elif(msg["method"]=="quit"): #send quit to all neighbours
+                elif(msg["method"]=="disappear"): #send quit to all neighbours
                     addr = (msg["destination"]["ip"], PORT)
                     msgJson = json.dumps(msg)
                     s_unicast.sendto(msgJson.encode(), addr)
@@ -98,7 +98,6 @@ class sender:
                     addr = (msg["destination"]["ip"], PORT)
                     msgJson = json.dumps(msg)
                     s_unicast.sendto(msgJson.encode(), addr)
-                    print("position sent to car agent")
                     
                 elif(msg["method"]=="ping" or msg["method"]=="pong"):
                     addr = (msg["destination"]["ip"], PORT)

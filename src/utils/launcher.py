@@ -10,6 +10,7 @@ from communication.intra.identification import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
+import logging
 
 
 
@@ -23,30 +24,21 @@ class launcher:
     """
 
     def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast):
-        self.stopFlag = threading.Event()
-        self.AGENTTYPE = agenttype
-        self.LEVEL = level
-        self.DNS = DNS
-        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast)
-        myself = neighbour(ip="", agenttype=self.AGENTTYPE, level=self.LEVEL)
-        myself.update_DNS(self.DNS)
+        self.stopFlag = threading.Event()                               #Flag to stop thread when agent is quitting 
+        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast)      #to store all Queue's (communication between threads)
+        myself = neighbour(ip="", agenttype=agenttype, level=level)     #to know all paramters of myself as neighbour
+        myself.update_DNS(DNS)
         myself.generate_own_IP()
-        self.n = neighbourhood(myself)
+        self.n = neighbourhood(myself)                                  #to store all neighbours
         
     def launch(self):
-        try:
-            self.launch_identification()
-            if(self.AGENTTYPE == "blank"):
-                pass
-            elif(self.AGENTTYPE == "detection"):
-                self.launch_detection()
-            elif(self.AGENTTYPE == "tracking"):
-                self.launch_trackers()
-            while self.stopFlag.is_set()==False:
-                time.sleep(10)
-        except KeyboardInterrupt:
-            self.run.set()
-        print("task stopped")
+        self.launch_identification()
+        if(self.n.myself.agenttype == "blank"):
+            pass
+        elif(self.n.myself.agenttype == "detection"):
+            self.launch_detection()
+        elif(self.n.myself.agenttype == "tracking"):
+            self.launch_trackers()
         
 
     

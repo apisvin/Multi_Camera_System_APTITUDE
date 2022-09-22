@@ -3,6 +3,7 @@ from queue import Queue
 from utils.neighbourhood import *
 from utils.neighbour import *
 import time
+import logging
 
 class watcher():
     """
@@ -20,7 +21,7 @@ class watcher():
             neighbourhood : classe contenant l ensemble des voisins de l agent 
             dicqueue : dictionnaire de queue afin de comminiquer entre taches 
         """
-        self.stopFlag = stopFlag
+        self.stopFlag = stopFlag            #set flag to kill all thread associated to an agent 
         self.neighbourhood=neighbourhood
         self.dicqueue = dicqueue
         self.delay = 5
@@ -32,10 +33,12 @@ class watcher():
         Lorsqu un message est recu, il update l age du voisin correspond 
         """
         while self.stopFlag.is_set()==False:
-            received = self.dicqueue.Qtowatcher.get()
-            #print("alive received from agentID = ", received["source"]["agentID"])
-            self.neighbourhood.update_agent_age(received["source"]["agentID"])
-        print("stopped")
+            try:
+                received = self.dicqueue.Qtowatcher.get(timeout=self.delay)
+                self.neighbourhood.update_agent_age(received["source"]["agentID"])
+            except:
+                pass
+        logging.debug("receive_alive stopped")
             
     def send_alive(self):
         """
@@ -56,7 +59,7 @@ class watcher():
                     "spec" : {}}
                 self.dicqueue.Qtosendunicast.put(msg)
             time.sleep(self.delay) #wait delay seconds
-        print("stopped")
+        logging.debug("send_alive stopped")
             
     def check_age(self):
         """
@@ -68,18 +71,17 @@ class watcher():
         while self.stopFlag.is_set()==False:
             for child in self.neighbourhood.get_children():
                 if(time.time() - child.age > 3*self.delay):
-                    #print("child passed away")
                     msg = {"source" : child.__dict__,
                         "destination" : self.neighbourhood.myself.__dict__,
-                        "method" : "quit",
+                        "method" : "disappear",
                         "spec" : {}}
                     self.dicqueue.Qtoidentification.put(msg)
             parent = self.neighbourhood.get_parent()
             if(parent != 0 and time.time() - parent.age > 3*self.delay): #parent exists
                 msg = {"source" : parent.__dict__,
                     "destination" : self.neighbourhood.myself.__dict__,
-                    "method" : "quit",
+                    "method" : "disappear",
                     "spec" : {}}
                 self.dicqueue.Qtoidentification.put(msg)
             time.sleep(3) #wait 5 seconds
-        print("stopped")
+        logging.debug("check_age stopped")

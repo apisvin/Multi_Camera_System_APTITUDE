@@ -4,6 +4,7 @@ from queue import Queue
 from utils.neighbourhood import *
 from utils.neighbour import *
 import time
+import logging
 
 class identification:
     """
@@ -16,9 +17,9 @@ class identification:
         neighbourhood : classe contenant l ensemble des agents dans le voisinage de l agent qui a lance identification
         dicqueue : dictionnaire de queue contenant l ensemble des queues qui permettent la communication entre taches 
         """
-        self.stopFlag = stopFlag
+        self.stopFlag = stopFlag        #set flag to kill all thread associated to an agent 
         
-        self.dicqueue = dicqueue #liste des queues
+        self.dicqueue = dicqueue        #liste des queues
                 
         self.neighbourhood = neighbourhood
         
@@ -26,7 +27,7 @@ class identification:
         """
         boucle permettant de traiter les differents messages recu relatifs aux connections entre agents
         """
-        while(not self.neighbourhood.myself.DNS): #envoyer des init jusqu a reception du ackinit
+        while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
             self.init() #envoyer un msg init
             if(not(self.dicqueue.Qtoidentification.empty())):
                 received = self.dicqueue.Qtoidentification.get()
@@ -38,12 +39,15 @@ class identification:
             received = self.dicqueue.Qtoidentification.get()
             #casing of msg
             if(received["method"]=="init" and len(self.neighbourhood.get_children())<2):
-                print("init received")
+                logging.debug("init received")
                 self.ackinit(received)
             elif(received["method"]=="ackparent"):
                 self.received_ackparent(received)
             elif(received["method"]=="quit"):
                 self.quit(received)
+                break #bread the loop because the agent quit the network
+            elif(received["method"]=="disappear"):
+                self.disappear(received)
             elif(received["method"]=="ackquit"):
                 self.ackquit(received)
             elif(received["method"]=="update"):
@@ -56,7 +60,7 @@ class identification:
                 self.received_acklook(received)
             elif(received["method"]=="detect"):
                 self.detect(received)
-        print("identification stopped")
+        logging.debug("identification stopped")
                     
     def init(self):
         """
@@ -98,7 +102,6 @@ class identification:
                 "method" : "ackinit",
                 "spec" : {}}
             self.dicqueue.Qtosendunicast.put(msg)
-            print("New car : ", newagent.__dict__)
         #newagent is one level under and is not known
         elif(newagent.level + 1 == self.neighbourhood.myself.level):# and self.neighbourhood.IP_is_not_in_children(newagent)):
             # Check num of child
@@ -132,6 +135,7 @@ class identification:
                     "destination" : parent.__dict__,
                     "method" : "ackparent",
                     "spec" : {}}
+            logging.debug("New agent created : {}".format(self.neighbourhood.myself.__dict__))
             self.dicqueue.Qtosendunicast.put(msg)
         
     def received_ackparent(self, receptedmsg):
@@ -146,12 +150,30 @@ class identification:
         newagent.masterID = dictagent["masterID"]
         # Update list of child
         self.neighbourhood.update_children(newagent)
-        print(self.neighbourhood.myself.DNS + "'s new child is " + newagent.DNS)
+        logging.info(self.neighbourhood.myself.DNS + "'s new child is " + newagent.DNS)
                 
-
     def quit(self, receptedmsg):
         """
-        reception du message quit signifie que l agent source veut sortir du réseau
+        la reception du message quit signifie que l agent souhaite quitter le reseau.
+        L agent doit alors le dire a l ensemble de ses connexions en disant qu'il disparait (disappear message)
+        """
+        for c in self.neighbourhood.children: # send disappear msg to all children
+            msg = {"source" : self.neighbourhood.myself.__dict__,
+                "destination" : c.__dict__,
+                "method" : "disappear",
+                "spec" : {}}
+            self.dicqueue.Qtosendunicast.put(msg)
+        if(self.neighbourhood.parent != 0): #send disappear message to parent 
+            msg = {"source" : self.neighbourhood.myself.__dict__,
+                "destination" : self.neighbourhood.parent.__dict__,
+                "method" : "disappear",
+                "spec" : {}}
+            self.dicqueue.Qtosendunicast.put(msg)
+
+
+    def disappear(self, receptedmsg):
+        """
+        reception du message disappear signifie que l agent source veut sortir du réseau
         etapes à gérer : 
            le message recu correspond a mon master :
                update mes infos perso
@@ -159,12 +181,12 @@ class identification:
         if agent == mon parent -> update parent + chercher nouveau parent en envoyant look
         """
         if(self.neighbourhood.myself.agentID == receptedmsg["source"]["masterID"]):
-            print("Child disappeared : ", receptedmsg["source"])
+            logging.info("{}'s child disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"]))
             self.neighbourhood.deleteChild(receptedmsg["source"]["agentID"])
         elif(self.neighbourhood.myself.masterID == receptedmsg["source"]["agentID"]):
-            print("Parent disappeared : ", receptedmsg["source"])
+            logging.info("{}'s parent disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"]))
             self.neighbourhood.myself.update_level_master()
-            self.look()
+            #self.look()
         
     def look(self):
         """ 
@@ -215,7 +237,7 @@ class identification:
         newParent = neighbour(ip=newParentdict["ip"], agenttype=newParentdict["agenttype"], level=newParentdict["level"], hardwareID=newParentdict["hardwareID"])
         newParent.update_all_DNS(newDNS=newParentdict["DNS"], newmasterDNS=newParentdict["masterDNS"])
         self.neighbourhood.update_parent_without_level(newParent)
-        print("New parent of " +  self.neighbourhood.myself.DNS, " is " + self.neighbourhood.get_parent().DNS)
+        logging.debug("New parent of " +  self.neighbourhood.myself.DNS + " is " + self.neighbourhood.get_parent().DNS)
         #launch update to tell children that my DNS has changed
         self.update()
         

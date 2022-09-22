@@ -17,6 +17,10 @@ from utils.neighbourhood import *
 from utils.neighbourhood_hardware import *
 from GUI.GUI import *
 
+import logging
+# level : DEBUG < INFO < WARNING < ERROR < CRITICAL
+logging.basicConfig(level=logging.DEBUG)
+
 Qtosendunicast, Qtosendbroadcast = Queue(), Queue()
 neighbourhood_h = neighbourhood_hardware()
     

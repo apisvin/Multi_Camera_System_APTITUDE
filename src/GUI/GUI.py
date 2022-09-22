@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from utils.launcher import *
+import logging
 
 class App(Tk):
     def __init__(self, neighbourhood_h, Qtosendunicast, Qtosendbroadcast):
@@ -10,7 +11,7 @@ class App(Tk):
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
 
-        self.title("Managing agentg")
+        self.title("Managing agents")
         self.geometry("300x500")
 
         #Title
@@ -79,7 +80,6 @@ class App(Tk):
 
     def add_clicked(self, DNS, agenttype, level):
         #launcher thread
-        print("New agent created (type : "+ agenttype + ", DNS : " + DNS + ", level : " + level)
         l = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast)
         self.neighbourhood_h.add(l)
         threading.Thread(target=l.launch, args=()).start()
@@ -96,22 +96,20 @@ class App(Tk):
     def remove_clicked(self):
         index = self.list_agent.curselection()[0]           #get index of selected item in list_agent
         removed_hardwareID = self.list_agent.get(index)[1]  #extract corresponding hardwareID
-        print("GUI : " + self.list_agent.get(index)[0] + " selected")
 
         removed_launcher = self.neighbourhood_h.tasks[self.neighbourhood_h.get_index(removed_hardwareID)]
         removed_neighbourhood = removed_launcher.n          # extract neighbourhood of quitting agent
-        print("GUI : " + removed_neighbourhood.myself.DNS + " is quitting")
+        logging.debug("GUI : " + removed_neighbourhood.myself.DNS + " is quitting")
         msg = {"source" : removed_neighbourhood.myself.__dict__,
             "destination" : "",
             "method" : "quit",
             "spec" : {}}
-        # send quit msg to all neighbours
-        for c in removed_neighbourhood.children:
-            msg["destination"] = c.__dict__
-            self.Qtosendunicast.put(msg)
-        if(removed_neighbourhood.parent != 0):
-            msg["destination"] = removed_neighbourhood.parent.__dict__
-            self.Qtosendunicast.put(msg)
+
+        removed_launcher.dicqueue.Qtoidentification.put(msg)
+    
+        time.sleep(3)
+        self.neighbourhood_h.remove(removed_hardwareID)
+        removed_launcher.stopFlag.set() #set the flag to stop all threads associated to this agent 
 
         self.list_agent.delete(index)                       #delete line
 

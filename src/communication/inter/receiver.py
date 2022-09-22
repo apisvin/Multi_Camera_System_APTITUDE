@@ -1,5 +1,6 @@
 import socket
 import json
+import logging
 
 UDP_IP = ''
 
@@ -65,12 +66,10 @@ class receiver():
             msgReceived = msgReceived.decode()
             if(self.local_ip != address[0]): #message not from me
                 dictReceived = json.loads(msgReceived)
-                #print("msg receiver = ", dictReceived)
                 #chercher la bonne dicqueue dans neighbourhood_hardware
                 dicqueue = self.neighbourhood_hardware.get_dicqueue(dictReceived["destination"]["hardwareID"])
                 if(dicqueue==-1):
-                    print("message received (destination is not on hardware) : ")
-                    print(dictReceived)
+                    logging.debug("message received (destination is not on hardware) : {}".format(dictReceived))
                 else:
                     put_on_queue(dictReceived, dicqueue)
                 
@@ -91,7 +90,9 @@ def put_on_queue(dictReceived, dicqueue):
         dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "quit"):
-        #an other agent leave the network 
+        dicqueue.Qtoidentification.put(dictReceived)
+
+    if(dictReceived["method"] == "disappear"):
         dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "look"):

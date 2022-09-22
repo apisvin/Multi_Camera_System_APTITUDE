@@ -8,6 +8,7 @@ from communication.inter.sender import *
 from communication.inter.receiver import *
 from communication.intra.identification import *
 from utils.neighbourhood import *
+import logging
     
 class neighbourhood_hardware:
     
@@ -38,9 +39,15 @@ class neighbourhood_hardware:
     def get_dicqueue(self, hardwareID):
         index = self.get_index(hardwareID)
         if index == -1:
-            #print("neighbourhood_hardware goes wrong")
             return -1
         else:
             return self.tasks[index].dicqueue
+
+    def remove(self, hardwareID):
+        index = self.get_index(hardwareID)
+        if index == -1:
+            logging.ERROR("hardwareID not in tasks")
+        else:
+            self.tasks.pop(index)
     
 
