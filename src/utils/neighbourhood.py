@@ -26,8 +26,8 @@ class neighbourhood:
     def get_children(self):
         return self.children
     
-    #retourne l'index de l'element dans la liste. retourne -1 si pas dans la liste 
     def isInChildren(self, agent):
+        """retourne l'index de l'element dans la liste. retourne -1 si pas dans la liste """
         index = 0
         self.lockChildren.acquire()
         for n in self.children:
@@ -39,7 +39,7 @@ class neighbourhood:
         return -1
     
     def update_agent_age(self, agentID):
-        #check all children
+        """update age of agent with agentID"""
         self.lockChildren.acquire()
         for child in self.children:
             if(child.agentID == agentID):
@@ -55,8 +55,8 @@ class neighbourhood:
             if(c.agentID == agentID):
                 child.update_age()
     
-    #return boolean to tell if newagent IP is in children
     def IP_is_not_in_children(self, newagent):
+        """return boolean to tell if newagent IP is in children"""
         self.lockChildren.acquire()
         for n in self.children:
             if n.ip == newagent.ip:
@@ -66,26 +66,22 @@ class neighbourhood:
         self.lockChildren.release()
         return True
     
-    #update the parent list 
     def update_parent(self, newParent, browse=False):
+        """update the parent with newparent"""
         if (newParent.level == self.myself.level +1): #voisin deja dans la liste -> actualise age
-            if browse:
-                print("new agent added to list")
-                self.printAll()
             self.lockParent.acquire()
             self.parent = newParent #add parent to neighbourhood
             self.lockParent.release()
     
-    #if procedure look !!!
     def update_parent_without_level(self, newParent, browse=False):
-        if browse:
-            print("new parent added to list")
+        """update the parent with newparent without checking level for look procedure"""
         self.lockParent.acquire()
         self.parent = newParent #add client to neighbourhood
         self.lockParent.release()
     
     #update the parent list 
     def update_children(self, newNeighbour, browse=False):
+        """add newNeighbour in children list"""
         index = self.isInChildren(newNeighbour)
         if (index == -1 and newNeighbour.level == self.myself.level - 1): 
             if browse:
@@ -95,12 +91,10 @@ class neighbourhood:
             self.children.append(newNeighbour) #add client to neighbourhood
             self.lockChildren.release()
 
-    def update_children_without_level(self, newNeighbour, browse=False):
+    def update_children_without_level(self, newNeighbour):
+        """add newNeighbour in children list without checking level"""
         index = self.isInChildren(newNeighbour)
         if (index == -1): #voisin deja dans la liste ?
-            if browse:
-                print("new agent added to list")
-                self.printAll()
             self.lockChildren.acquire()
             self.children.append(newNeighbour) #add client to neighbourhood
             self.lockChildren.release()

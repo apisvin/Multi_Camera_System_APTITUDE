@@ -223,7 +223,6 @@ class identification:
         newagent.update_all_DNS(newDNS, dictagent["masterDNS"])
         #add new agent to childhood
         self.neighbourhood.update_children_without_level(newagent)
-        self.neighbourhood.printAllchildren()
         #send resp
         msg = {"source" : self.neighbourhood.myself.__dict__,
                 "destination" : newagent.__dict__,

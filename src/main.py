@@ -26,15 +26,11 @@ neighbourhood_h = neighbourhood_hardware()
     
 
 def launch_hardware_com(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast):
-    r = receiver(neighbourhood_hardware)
-    s = sender(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast)
-    
-    t_receive_unicast = threading.Thread(target=r.receive_unicast, args=())
-    #t_receive_unicast.deamon=True
-    t_receive_unicast.start()
-    
+    r = receiver(neighbourhood_hardware)    
+    threading.Thread(target=r.receive_unicast, args=()).start()
     threading.Thread(target=r.receive_broadcast, args=()).start()
     
+    s = sender(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast)
     threading.Thread(target=s.send_unicast, args=()).start()
     threading.Thread(target=s.send_broadcast, args=()).start()
 
