@@ -1,0 +1,1 @@
+Hello, I'm ansible txt to send to others RPi's
