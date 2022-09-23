@@ -52,28 +52,8 @@ class sender:
                 dicqueue_dest = self.neighbourhood_hardware.get_dicqueue(msg["destination"]["hardwareID"])
                 put_on_queue(msg, dicqueue_dest)
             #send msg on network
-            else:
-                if(msg["method"]=="ackinit"): #reponse to child
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
-                    
-                elif(msg["method"]=="ackparent"): #reponse to parent
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
-                    
-                elif(msg["method"]=="disappear"): #send quit to all neighbours
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
-                        
-                elif(msg["method"]=="acklook"):
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
-                    
-                elif(msg["method"]=="update"):
+            else:                    
+                if(msg["method"]=="update"):
                     children = msg["spec"]["children"]
                     msg["spec"].pop("children")
                     for child in children:
@@ -81,11 +61,6 @@ class sender:
                         msg["destination"] = child.__dict__
                         msgJson = json.dumps(msg)
                         s_unicast.sendto(msgJson.encode(), addr)
-                        
-                elif(msg["method"]=="alive"):
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
  
                 elif(msg["method"]=="detect"):
                     #return a list of agent tracking
@@ -93,13 +68,9 @@ class sender:
                         addr = (msg["destination"]["ip"], PORT)
                         msgJson = json.dumps(msg)
                         s_unicast.sendto(msgJson.encode(), addr)
-                        
-                elif(msg["method"]=="car"):
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
                     
-                elif(msg["method"]=="ping" or msg["method"]=="pong"):
+                    
+                else:
                     addr = (msg["destination"]["ip"], PORT)
                     msgJson = json.dumps(msg)
                     s_unicast.sendto(msgJson.encode(), addr)

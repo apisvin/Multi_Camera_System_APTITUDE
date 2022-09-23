@@ -14,8 +14,11 @@ class neighbourhood:
         
         self.lockChildren = threading.Lock() #acquire and release to protect variable
         self.children = []
-        #self.myself = myself
+        
         self.myself = myself
+
+        self.lockCluster = threading.Lock() #acquire and release to protect variable
+        self.cluster = []
         
     def get_parent(self):
         return self.parent
@@ -47,6 +50,10 @@ class neighbourhood:
         if(self.parent != 0 and self.parent.agentID == agentID):
             self.parent.update_age()
         self.lockParent.release()
+
+        for c in self.cluster:
+            if(c.agentID == agentID):
+                child.update_age()
     
     #return boolean to tell if newagent IP is in children
     def IP_is_not_in_children(self, newagent):
@@ -105,6 +112,11 @@ class neighbourhood:
                 self.lockChildren.acquire()
                 self.children.remove(child)
                 self.lockChildren.release()
+
+    def deleteCluster(self, deletedclusterID):
+        for c in self.cluster:
+            if(deletedclusterID == c.agentID):
+                self.cluster.remove(c)
      
     def printAllchildren(self):
         print('Liste des enfants de ', self.myself.DNS)
@@ -117,12 +129,21 @@ class neighbourhood:
     def printParent(self):
         print("parent : ", self.parent)
         
-        
-    #Projet commun avec Xavier Claude
-    #retourn the car agent 
-    def get_car(self):
-        for child in self.children:
-            if(child.agenttype=="car"):
-                return child.__dict__
-        #print("no car in children")
-        return -1
+    
+    def add_to_cluster(self, cluster_list):
+        for c in cluster_list:
+            self.cluster.append(c)
+
+    def cluster_str(self):
+        val = ""
+        for c in self.cluster:
+            val = val + "   " + c.DNS
+        return val
+
+    def get_all_neighbours(self):
+        val = []
+        if(self.parent != 0):
+            val.append(self.parent)
+        val.extend(self.children)
+        val.extend(self.cluster)
+        return val

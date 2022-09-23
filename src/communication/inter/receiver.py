@@ -104,6 +104,9 @@ def put_on_queue(dictReceived, dicqueue):
     if(dictReceived["method"] == "update"):
         dicqueue.Qtoidentification.put(dictReceived)
 
+    if(dictReceived["method"] == "initcluster"):
+        dicqueue.Qtoidentification.put(dictReceived)
+
     if(dictReceived["method"] == "alive"):
         dicqueue.Qtowatcher.put(dictReceived)
         
