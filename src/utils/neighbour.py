@@ -2,6 +2,7 @@ import time
 import json
 import uuid
 import socket
+import logging
 
 class neighbour:
     
@@ -30,6 +31,19 @@ class neighbour:
             self.hardwareID = uuid.uuid1().hex #random ID to identify agent on hardware 
         else:
             self.hardwareID = hardwareID #if specified, give hardwareID
+
+    @classmethod
+    def asdict(cls, dictagent):
+        logging.debug("neighbour asdict : dictagent = {}".format(dictagent))
+        newNeighbour = cls(ip = dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"])
+        newNeighbour.DNS = dictagent["DNS"]
+        newNeighbour.agentID = dictagent["agentID"]
+        newNeighbour.masterDNS = dictagent["masterDNS"]
+        newNeighbour.masterID = dictagent["masterID"]
+        newNeighbour.age = time.time()
+        newNeighbour.hardwareID = dictagent["hardwareID"]
+        return newNeighbour
+        
     
     def generate_own_IP(self):
         """

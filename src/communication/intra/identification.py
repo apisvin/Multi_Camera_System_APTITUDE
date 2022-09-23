@@ -96,7 +96,7 @@ class identification:
             DNSagent  = newagent.agenttype + str(numbneigh) +"."+ self.neighbourhood.myself.DNS
             newagent.update_all_DNS(DNSagent, self.neighbourhood.myself.DNS)
             # create list of agent in the new agent's cluster (all children of myself)
-            cluster = self.neighbourhood.children
+            cluster = self.neighbourhood.get_children_asdict()
             # Creation of message to send back to child
             msg = {"source" : self.neighbourhood.myself.__dict__,
                 "destination" : newagent.__dict__,
@@ -128,7 +128,8 @@ class identification:
             logging.debug("New agent created : {}".format(self.neighbourhood.myself.__dict__))
             self.dicqueue.Qtosendunicast.put(msg)
             #update cluster 
-            self.neighbourhood.add_to_cluster(receptedmsg["spec"]["cluster"])
+            for dictagent in receptedmsg["spec"]["cluster"]:
+                self.neighbourhood.add_to_cluster(neighbour.asdict(dictagent))
             logging.info("{}'s cluster is {}".format(self.neighbourhood.myself.DNS, self.neighbourhood.cluster_str()) )
             #send initcluster to each agent in cluster 
             for c in self.neighbourhood.cluster:
@@ -143,11 +144,7 @@ class identification:
         le message ackparent recu permet de mettre a jour la liste d 'enfant avec le nouvel enfant 
         """
         dictagent = receptedmsg["source"]
-        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
-        newagent.DNS = dictagent["DNS"]
-        newagent.agentID = dictagent["agentID"]
-        newagent.masterDNS = dictagent["masterDNS"]
-        newagent.masterID = dictagent["masterID"]
+        newagent = neighbour.asdict(dictagent)
         # Update list of child
         self.neighbourhood.update_children(newagent)
         logging.info(self.neighbourhood.myself.DNS + "'s new child is " + newagent.DNS)
@@ -157,13 +154,9 @@ class identification:
         a new agent in the cluster sent a initcluster to register in myself's cluster 
         """
         dictagent = receptedmsg["source"]
-        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
-        newagent.DNS = dictagent["DNS"]
-        newagent.agentID = dictagent["agentID"]
-        newagent.masterDNS = dictagent["masterDNS"]
-        newagent.masterID = dictagent["masterID"]
+        newagent = neighbour.asdict(dictagent)
         #add newagent to myself's cluster
-        self.neighbourhood.add_to_cluster([newagent])
+        self.neighbourhood.add_to_cluster(newagent)
         logging.info("{}'s cluster is {}".format(self.neighbourhood.myself.DNS, self.neighbourhood.cluster_str()) )
                 
     def quit(self, receptedmsg):

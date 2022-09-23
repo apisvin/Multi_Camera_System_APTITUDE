@@ -130,9 +130,8 @@ class neighbourhood:
         print("parent : ", self.parent)
         
     
-    def add_to_cluster(self, cluster_list):
-        for c in cluster_list:
-            self.cluster.append(c)
+    def add_to_cluster(self, newagent):
+        self.cluster.append(newagent)
 
     def cluster_str(self):
         val = ""
@@ -146,4 +145,10 @@ class neighbourhood:
             val.append(self.parent)
         val.extend(self.children)
         val.extend(self.cluster)
+        return val
+
+    def get_children_asdict(self):
+        val = []
+        for child in self.children:
+            val.append(child.__dict__)
         return val
