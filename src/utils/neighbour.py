@@ -34,7 +34,6 @@ class neighbour:
 
     @classmethod
     def asdict(cls, dictagent):
-        logging.debug("neighbour asdict : dictagent = {}".format(dictagent))
         newNeighbour = cls(ip = dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"])
         newNeighbour.DNS = dictagent["DNS"]
         newNeighbour.agentID = dictagent["agentID"]

@@ -165,7 +165,6 @@ class identification:
         L agent doit alors le dire a l ensemble de ses connexions en disant qu'il disparait (disappear message)
         """
         all_neighbours = self.neighbourhood.get_all_neighbours()
-        logging.debug("all_neighbours = {}".format(all_neighbours))
         for n in all_neighbours:
             msg = {"source" : self.neighbourhood.myself.__dict__,
                 "destination" : n.__dict__,

@@ -14,31 +14,35 @@ from utils.dicqueue import *
 from utils.launcher import *
 from utils.neighbour import *
 from utils.neighbourhood import *
-from utils.neighbourhood_hardware import *
+from utils.hardware_manager import *
 from GUI.GUI import *
 
 import logging
 # level : DEBUG < INFO < WARNING < ERROR < CRITICAL
 logging.basicConfig(level=logging.DEBUG)
 
-Qtosendunicast, Qtosendbroadcast = Queue(), Queue()
-neighbourhood_h = neighbourhood_hardware()
+Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
+hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)
     
 
-def launch_hardware_com(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast):
-    r = receiver(neighbourhood_hardware)    
+def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):
+    r = receiver(hardware_manager)    
     threading.Thread(target=r.receive_unicast, args=()).start()
     threading.Thread(target=r.receive_broadcast, args=()).start()
     
-    s = sender(neighbourhood_hardware, Qtosendunicast, Qtosendbroadcast)
+    s = sender(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     threading.Thread(target=s.send_unicast, args=()).start()
     threading.Thread(target=s.send_broadcast, args=()).start()
 
+def launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast):
+    threading.Thread(target=hardware_manager.launch, args=()).start()
+
 
 def main():
-    launch_hardware_com(neighbourhood_h, Qtosendunicast, Qtosendbroadcast)
+    launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast)
+    launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     
-    app = App(neighbourhood_h, Qtosendunicast, Qtosendbroadcast)
+    app = App(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     app.mainloop()
     
 

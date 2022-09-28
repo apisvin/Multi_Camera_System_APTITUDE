@@ -4,10 +4,10 @@ from utils.launcher import *
 import logging
 
 class App(Tk):
-    def __init__(self, neighbourhood_h, Qtosendunicast, Qtosendbroadcast):
+    def __init__(self, hardware_manager, Qtosendunicast, Qtosendbroadcast):
         super().__init__()
 
-        self.neighbourhood_h = neighbourhood_h
+        self.hardware_manager = hardware_manager
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
 
@@ -80,37 +80,34 @@ class App(Tk):
 
     def add_clicked(self, DNS, agenttype, level):
         #launcher thread
-        l = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast)
-        self.neighbourhood_h.add(l)
+        l = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
+        self.hardware_manager.add(l)
         threading.Thread(target=l.launch, args=()).start()
-        self.list_agent.insert(END, (agenttype, l.n.myself.hardwareID))
+        self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))
+        """msg = {"source" : "GUI",
+                "destination" : "hardware_manager",
+                "method" : "create",
+                "spec" : {"DNS" : DNS,
+                            "agenttype" : agenttype,
+                            "level" : level}}
+        self.hardware_manager.QtoHardwareManager.put(msg)"""
+        
 
-        pass
 
     def refresh_clicked(self):
         self.list_agent.delete(0, self.list_agent.size()-1) #delete all lines 
-        for l in self.neighbourhood_h.tasks:
-            self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))
+        for hardwareID, launcher in self.hardware_manager.launchers.items():
+            self.list_agent.insert(END, (launcher.n.myself.DNS, hardwareID))
 
 
     def remove_clicked(self):
         index = self.list_agent.curselection()[0]           #get index of selected item in list_agent
         removed_hardwareID = self.list_agent.get(index)[1]  #extract corresponding hardwareID
-
-        removed_launcher = self.neighbourhood_h.tasks[self.neighbourhood_h.get_index(removed_hardwareID)]
-        removed_neighbourhood = removed_launcher.n          # extract neighbourhood of quitting agent
-        logging.debug("GUI : " + removed_neighbourhood.myself.DNS + " is quitting")
-        msg = {"source" : removed_neighbourhood.myself.__dict__,
-            "destination" : "",
-            "method" : "quit",
-            "spec" : {}}
-
-        removed_launcher.dicqueue.Qtoidentification.put(msg)
-    
-        time.sleep(3)
-        self.neighbourhood_h.remove(removed_hardwareID)
-        removed_launcher.stopFlag.set() #set the flag to stop all threads associated to this agent 
-
+        msg = {"source" : "GUI",
+                "destination" : "hardware_manager",
+                "method" : "remove",
+                "spec" : {"hardwareID" : removed_hardwareID}}
+        self.hardware_manager.QtoHardwareManager.put(msg)
         self.list_agent.delete(index)                       #delete line
 
 

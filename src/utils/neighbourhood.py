@@ -101,6 +101,7 @@ class neighbourhood:
     
     #delete from the list
     def deleteChild(self, deletedchildID):
+        """remove neighbour with deletedchildID in children list"""
         for child in self.children:
             if(deletedchildID == child.agentID):
                 self.lockChildren.acquire()
@@ -108,32 +109,24 @@ class neighbourhood:
                 self.lockChildren.release()
 
     def deleteCluster(self, deletedclusterID):
+        """remove neighbour with deletedclusterID in cluster list"""
         for c in self.cluster:
             if(deletedclusterID == c.agentID):
                 self.cluster.remove(c)
-     
-    def printAllchildren(self):
-        print('Liste des enfants de ', self.myself.DNS)
-        i=1
-        for n in self.children:
-            print(n.DNS)
-            i=i+1
-        print()
-        
-    def printParent(self):
-        print("parent : ", self.parent)
-        
     
-    def add_to_cluster(self, newagent):
-        self.cluster.append(newagent)
+    def add_to_cluster(self, newNeighbour):
+        """add newNeighbour to cluster list"""
+        self.cluster.append(newNeighbour)
 
     def cluster_str(self):
+        """return a string containing DNS's of neighbours composing cluster"""
         val = ""
         for c in self.cluster:
             val = val + "   " + c.DNS
         return val
 
     def get_all_neighbours(self):
+        """return a list of all neighbour of the neighbourhood (parent, children and cluster)"""
         val = []
         if(self.parent != 0):
             val.append(self.parent)
@@ -142,6 +135,7 @@ class neighbourhood:
         return val
 
     def get_children_asdict(self):
+        """retrun a list of dictionnary containing all children"""
         val = []
         for child in self.children:
             val.append(child.__dict__)

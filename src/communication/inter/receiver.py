@@ -10,15 +10,15 @@ class receiver():
     la classe receiver permet de traiter les messages entrant dans l hardware.
     Pour des soucis d efficacite, une seule classe receiver est creee par hardware.
     Cela permet de ne pas devoir ouvrir plusiers canaux de communication (socket).
-    Afin de conaitre l ensemble des agents herberges sur l hardware, une variable neighbourhood_hardware est utilisee.
+    Afin de conaitre l ensemble des agents herberges sur l hardware, une variable manager_hardware est utilisee.
     Elle contient l ensemble des agents contenu sur l hardware. Il est possible de les distinguer par un identifier unique : hardware_ID
     """
     
-    def __init__(self, neighbourhood_hardware):
+    def __init__(self, manager_hardware):
         """
         ouvre le canal de connumication (socket)
         """
-        self.neighbourhood_hardware = neighbourhood_hardware
+        self.manager_hardware = manager_hardware
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
         try:
@@ -47,8 +47,8 @@ class receiver():
             msgReceived = msgReceived.decode()
             if(self.local_ip != address[0]): #message not from me 
                 dictReceived = json.loads(msgReceived)
-                for task in self.neighbourhood_hardware.tasks:
-                    put_on_queue(dictReceived, task.dicqueue)
+                for agent in self.manager_hardware.agents:
+                    put_on_queue(dictReceived, agent.dicqueue)
             
 
     def receive_unicast(self):
@@ -66,10 +66,10 @@ class receiver():
             msgReceived = msgReceived.decode()
             if(self.local_ip != address[0]): #message not from me
                 dictReceived = json.loads(msgReceived)
-                #chercher la bonne dicqueue dans neighbourhood_hardware
-                dicqueue = self.neighbourhood_hardware.get_dicqueue(dictReceived["destination"]["hardwareID"])
+                #chercher la bonne dicqueue dans manager_hardware
+                dicqueue = self.manager_hardware.get_dicqueue(dictReceived["destination"]["hardwareID"])
                 if(dicqueue==-1):
-                    logging.debug("message received (destination is not on hardware) : {}".format(dictReceived))
+                    logging.info("message received (destination is not on hardware) : {}".format(dictReceived))
                 else:
                     put_on_queue(dictReceived, dicqueue)
                 

@@ -23,9 +23,9 @@ class launcher:
     
     """
 
-    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast):
+    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager):
         self.stopFlag = threading.Event()                               #Flag to stop thread when agent is quitting 
-        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast)      #to store all Queue's (communication between threads)
+        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)      #to store all Queue's (communication between threads)
         myself = neighbour(ip="", agenttype=agenttype, level=level)     #to know all paramters of myself as neighbour
         myself.update_DNS(DNS)
         myself.generate_own_IP()

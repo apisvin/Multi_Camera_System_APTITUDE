@@ -7,9 +7,10 @@ class dicqueue:
     puisque il n y a que un sender par hardware
     """
 
-    def __init__(self, Qtosendunicast, Qtosendbroadcast):
+    def __init__(self, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager):
         self.Qtosendunicast =       Qtosendunicast
         self.Qtosendbroadcast =     Qtosendbroadcast
+        self.QtoHardwareManager =   QtoHardwareManager
         self.Qtoidentification =    Queue()
         self.Qtowatcher =           Queue()
         self.Qfromrectokalman =     Queue()
