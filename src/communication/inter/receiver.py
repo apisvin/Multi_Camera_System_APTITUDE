@@ -14,11 +14,11 @@ class receiver():
     Elle contient l ensemble des agents contenu sur l hardware. Il est possible de les distinguer par un identifier unique : hardware_ID
     """
     
-    def __init__(self, manager_hardware):
+    def __init__(self, hardware_manager):
         """
         ouvre le canal de connumication (socket)
         """
-        self.manager_hardware = manager_hardware
+        self.hardware_manager = hardware_manager
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
         try:
@@ -47,8 +47,8 @@ class receiver():
             msgReceived = msgReceived.decode()
             if(self.local_ip != address[0]): #message not from me 
                 dictReceived = json.loads(msgReceived)
-                for agent in self.manager_hardware.agents:
-                    put_on_queue(dictReceived, agent.dicqueue)
+                for launcher in self.hardware_manager.launchers:
+                    put_on_queue(dictReceived, launcher.dicqueue)
             
 
     def receive_unicast(self):
@@ -67,7 +67,7 @@ class receiver():
             if(self.local_ip != address[0]): #message not from me
                 dictReceived = json.loads(msgReceived)
                 #chercher la bonne dicqueue dans manager_hardware
-                dicqueue = self.manager_hardware.get_dicqueue(dictReceived["destination"]["hardwareID"])
+                dicqueue = self.hardware_manager.get_dicqueue(dictReceived["destination"]["hardwareID"])
                 if(dicqueue==-1):
                     logging.info("message received (destination is not on hardware) : {}".format(dictReceived))
                 else:
