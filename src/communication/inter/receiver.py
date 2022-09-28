@@ -47,7 +47,7 @@ class receiver():
             msgReceived = msgReceived.decode()
             if(self.local_ip != address[0]): #message not from me 
                 dictReceived = json.loads(msgReceived)
-                for launcher in self.hardware_manager.launchers.items():
+                for hardwareID, launcher in self.hardware_manager.launchers.items():
                     put_on_queue(dictReceived, launcher.dicqueue)
             
 
