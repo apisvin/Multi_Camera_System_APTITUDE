@@ -48,13 +48,13 @@ class hardware_manager:
     def receive_request_creation(self, specdict):
         start = time.time()
         #clear queue from receiver
-        self.QtoReceiveRequestCreation.queue.clear()
+        #self.QtoReceiveRequestCreation.queue.clear()
         #compute own cost function
         cost = (self.ram+self.cpu)/2
         create = True
         while time.time() - start < 10:
             try:
-                received = self.dicqueue.QtoReceiveRequestCreation.get(timeout=1)
+                received = self.QtoReceiveRequestCreation.get(timeout=1)
                 logging.debug("receive_request_creation : cpu = {} ram = {}".format(self.cpu, self.ram))
             except:
                 pass
