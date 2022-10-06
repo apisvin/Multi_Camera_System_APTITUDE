@@ -98,10 +98,10 @@ class hardware_manager:
     
     def dispappear(self, received):
         #create input for cost function:
-        load1, load5, load15 = psutil.getloadavg()
+        load1, load5, load15 = os.getloadavg()
         self.cpu = (load15/os.cpu_count()) * 100         # CPU usage (%)
-        tot, av, percent, used, free = psutil.virtual_memory()
-        self.ram = percent                               # RAM usage (%)
+        mem = psutil.virtual_memory()
+        self.ram = mem.percent                               # RAM usage (%)
 
         #launch thread to receive 
         if self.requestCreationRunning == False:
