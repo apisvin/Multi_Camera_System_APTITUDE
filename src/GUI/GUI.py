@@ -84,6 +84,10 @@ class App(Tk):
         self.hardware_manager.add(l)
         threading.Thread(target=l.launch, args=()).start()
         self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))
+        if l.n.children:
+            self.list_agent.insert(END, "Children : ")
+            for c in l.n.children:
+                self.list_agent.insert(END, ("     ", c.DNS))
 
         
 
@@ -92,6 +96,10 @@ class App(Tk):
         self.list_agent.delete(0, self.list_agent.size()-1) #delete all lines 
         for hardwareID, launcher in self.hardware_manager.launchers.items():
             self.list_agent.insert(END, (launcher.n.myself.DNS, hardwareID))
+            if launcher.n.children:
+                self.list_agent.insert(END, "Children : ")
+                for c in launcher.n.children:
+                    self.list_agent.insert(END, ("     ", c.DNS))
 
 
     def remove_clicked(self):
