@@ -35,7 +35,7 @@ def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):
     threading.Thread(target=s.send_broadcast, args=()).start()
 
 def launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast):
-    threading.Thread(target=hardware_manager.launch, args=()).start()
+    threading.Thread(target=hardware_manager.hardware_manager, args=()).start()
 
 
 def main():

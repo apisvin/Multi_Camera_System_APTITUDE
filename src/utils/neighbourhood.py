@@ -66,27 +66,24 @@ class neighbourhood:
         self.lockChildren.release()
         return True
     
-    def update_parent(self, newParent, browse=False):
+    def update_parent(self, newParent):
         """update the parent with newparent"""
-        if (newParent.level == self.myself.level +1): #voisin deja dans la liste -> actualise age
+        if (newParent.level == self.myself.level +1):
             self.lockParent.acquire()
             self.parent = newParent #add parent to neighbourhood
             self.lockParent.release()
     
-    def update_parent_without_level(self, newParent, browse=False):
+    def update_parent_without_level(self, newParente):
         """update the parent with newparent without checking level for look procedure"""
         self.lockParent.acquire()
         self.parent = newParent #add client to neighbourhood
         self.lockParent.release()
     
     #update the parent list 
-    def update_children(self, newNeighbour, browse=False):
+    def update_children(self, newNeighbour):
         """add newNeighbour in children list"""
         index = self.isInChildren(newNeighbour)
         if (index == -1 and newNeighbour.level == self.myself.level - 1): 
-            if browse:
-                print("new agent added to list")
-                self.printAll()
             self.lockChildren.acquire()
             self.children.append(newNeighbour) #add client to neighbourhood
             self.lockChildren.release()
@@ -140,3 +137,20 @@ class neighbourhood:
         for child in self.children:
             val.append(child.__dict__)
         return val
+
+    def get_hardware_manager_cluster(self):
+        """return a list of neighbour
+        this list contains one neighbour per different ip address in self.cluster"""
+        ret = []
+        for c in self.cluster:
+            existing_ip = [d["ip"] for d in ret]
+            if c.ip not in existing_ip and c.ip != self.myself.ip:
+                ret.append(c.__dict__)
+        return ret
+
+    def get_children_info(self):
+        """return a string with DNS's of all children"""
+        ret = ""
+        for c in self.children:
+            ret = ret + c.DNS + " "
+        return ret

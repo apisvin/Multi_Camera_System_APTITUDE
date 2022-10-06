@@ -112,5 +112,8 @@ def put_on_queue(dictReceived, dicqueue):
         
     if(dictReceived["method"] == "detect"):
         dicqueue.Qfromrectokalman.put(dictReceived)
+
+    if(dictReceived["method"] == "request_creation"):
+        dicqueue.QtoHardwareManager.put(dictReceived)
         
     

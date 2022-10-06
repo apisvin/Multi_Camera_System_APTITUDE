@@ -84,13 +84,7 @@ class App(Tk):
         self.hardware_manager.add(l)
         threading.Thread(target=l.launch, args=()).start()
         self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))
-        """msg = {"source" : "GUI",
-                "destination" : "hardware_manager",
-                "method" : "create",
-                "spec" : {"DNS" : DNS,
-                            "agenttype" : agenttype,
-                            "level" : level}}
-        self.hardware_manager.QtoHardwareManager.put(msg)"""
+
         
 
 
