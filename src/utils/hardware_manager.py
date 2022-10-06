@@ -55,7 +55,10 @@ class hardware_manager:
         while time.time() - start < 10:
             try:
                 received = self.QtoReceiveRequestCreation.get(timeout=1)
-                logging.debug("receive_request_creation : cpu = {} ram = {}".format(self.cpu, self.ram))
+                if (self.cpu+self.ram)/2 > (received["spec"]["cpu"]+received["spec"]["ram"])/2:
+                    create = False
+                    logging.debug("receive_request_creation : my stats are not good to create")
+                    break
             except:
                 pass
         
