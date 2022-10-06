@@ -154,3 +154,13 @@ class neighbourhood:
         for c in self.children:
             ret = ret + c.DNS + " "
         return ret
+
+    def create_new_DNS(self, newagent):
+        """create a new DNS to newagent based on existing agent
+        A name is constructed as "agenttypeX" where X is an unique positive integer"""
+        i = 0
+        existing_DNS = [c.DNS for c in self.children] #list of different DNS in children
+        while newagent.agenttype+str(i)+"."+self.myself.DNS in existing_DNS:
+            i=i+1
+            time.sleep(1)
+        return newagent.agenttype+str(i)+"."+self.myself.DNS

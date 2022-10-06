@@ -91,9 +91,10 @@ class identification:
         #newagent is one level under and is not known
         if(newagent.level + 1 == self.neighbourhood.myself.level):# and self.neighbourhood.IP_is_not_in_children(newagent)):
             # Check num of child
-            numbneigh = len(self.neighbourhood.get_children())
+            #numbneigh = len(self.neighbourhood.get_children())
             # Update DNS's of child
-            DNSagent  = newagent.agenttype + str(numbneigh) +"."+ self.neighbourhood.myself.DNS
+            #DNSagent  = newagent.agenttype + str(numbneigh) +"."+ self.neighbourhood.myself.DNS
+            DNSagent = self.neighbourhood.create_new_DNS(newagent)
             newagent.update_all_DNS(DNSagent, self.neighbourhood.myself.DNS)
             # create list of agent in the new agent's cluster (all children of myself)
             cluster = self.neighbourhood.get_children_asdict()
