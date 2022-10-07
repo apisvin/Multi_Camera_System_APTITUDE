@@ -35,7 +35,7 @@ class watcher():
         while self.stopFlag.is_set()==False:
             try:
                 received = self.dicqueue.Qtowatcher.get(timeout=self.delay)
-                self.neighbourhood.update_agent_age(received["source"]["agentID"])
+                self.neighbourhood.update_agent_age(received["source"]["hardwareID"])
             except:
                 pass
         logging.debug("receive_alive stopped")

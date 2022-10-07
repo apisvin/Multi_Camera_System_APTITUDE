@@ -31,28 +31,28 @@ class neighbourhood:
         index = 0
         self.lockChildren.acquire()
         for n in self.children:
-            if n.agentID == agent.agentID:
+            if n.hardwareID == agent.hardwareID:
                 self.lockChildren.release()
                 return index
             index=index+1
         self.lockChildren.release()
         return -1
     
-    def update_agent_age(self, agentID):
-        """update age of agent with agentID"""
+    def update_agent_age(self, hardwareID):
+        """update age of agent with hardwareID"""
         self.lockChildren.acquire()
         for child in self.children:
-            if(child.agentID == agentID):
+            if(child.hardwareID == hardwareID):
                 child.update_age()
         self.lockChildren.release()
         
         self.lockParent.acquire()
-        if(self.parent != 0 and self.parent.agentID == agentID):
+        if(self.parent != 0 and self.parent.hardwareID == hardwareID):
             self.parent.update_age()
         self.lockParent.release()
 
         for c in self.cluster:
-            if(c.agentID == agentID):
+            if(c.hardwareID == hardwareID):
                 child.update_age()
     
     def IP_is_not_in_children(self, newagent):
@@ -100,7 +100,7 @@ class neighbourhood:
     def deleteChild(self, deletedchildID):
         """remove neighbour with deletedchildID in children list"""
         for child in self.children:
-            if(deletedchildID == child.agentID):
+            if(deletedchildID == child.hardwareID):
                 self.lockChildren.acquire()
                 self.children.remove(child)
                 self.lockChildren.release()
@@ -108,7 +108,7 @@ class neighbourhood:
     def deleteCluster(self, deletedclusterID):
         """remove neighbour with deletedclusterID in cluster list"""
         for c in self.cluster:
-            if(deletedclusterID == c.agentID):
+            if(deletedclusterID == c.hardwareID):
                 self.cluster.remove(c)
     
     def add_to_cluster(self, newNeighbour):

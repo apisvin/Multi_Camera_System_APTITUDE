@@ -12,9 +12,7 @@ class neighbour:
             - son addresse IP : identifiant socket UDP
             - son type : sa tache prédéfini qu'il doit accomplir dans le système (detection, tracking, ...)
             - sa DNS : un string reprenant l ensemble des agent depuis la racine. Elle se construit de manière récursive lors de l'insertion d'un agent au réseau
-            - agentID : identifiant unique assigne à un agent lors de son insertion
             - masterDNS : La variable DNS de l agent parent
-            - masterID : l'agentID de son parent
             - level : le niveau dans lequel l agent appartient dans l arbre. Le niveau 0 est l agent de plus bas niveau (detection)
             - son age : le temps depuis la reception du dernier message "alive"
             - hadwareID : identifiant unique donne à l agent lors de sa creation
@@ -22,9 +20,7 @@ class neighbour:
         self.ip=ip
         self.agenttype = agenttype
         self.DNS = ""
-        self.agentID = ""
         self.masterDNS = ""
-        self.masterID = ""
         self.level = level #constants.LEVEL
         self.age = time.time()
         if(hardwareID==""):
@@ -36,9 +32,7 @@ class neighbour:
     def asdict(cls, dictagent):
         newNeighbour = cls(ip = dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"])
         newNeighbour.DNS = dictagent["DNS"]
-        newNeighbour.agentID = dictagent["agentID"]
         newNeighbour.masterDNS = dictagent["masterDNS"]
-        newNeighbour.masterID = dictagent["masterID"]
         newNeighbour.age = time.time()
         newNeighbour.hardwareID = dictagent["hardwareID"]
         return newNeighbour
@@ -70,19 +64,13 @@ class neighbour:
         """
         change la DNS par newDNS et change la variable agentID
         """
-        if(newDNS == ""):
-            #no DNS
-            self.agentID = 0
-        else:
-            self.DNS = newDNS
-            self.agentID = uuid.uuid3(uuid.NAMESPACE_DNS, newDNS).hex
+        self.DNS = newDNS
     
     def update_master_DNS(self, newmasterDNS):
         """
         change la DNS du master par newmasterDNS et change la variable masterID
         """
         self.masterDNS = newmasterDNS
-        self.masterID = uuid.uuid3(uuid.NAMESPACE_DNS, newmasterDNS).hex
         
     def update_all_DNS(self, newDNS, newmasterDNS):
         """

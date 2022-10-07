@@ -54,14 +54,14 @@ class identification:
                 self.ackquit(received)
             elif(received["method"]=="update"):
                 self.ackupdate(received)
-            elif(received["method"]=="look"):
+            """elif(received["method"]=="look"):
                 if(received["source"]["masterID"] == self.neighbourhood.myself.agentID):
                     # some agent is looking for me for being its master
                     self.acklook(received)
             elif(received["method"]=="acklook"):
                 self.received_acklook(received)
             elif(received["method"]=="detect"):
-                self.detect(received)
+                self.detect(received)"""
         logging.debug("identification stopped")
                     
     def init(self):
@@ -86,7 +86,6 @@ class identification:
         dictagent = receptedmsg["source"]
         newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
         #for intern communication
-        old_agentID = dictagent["agentID"]
         logging.debug("init message is : {}".format(receptedmsg))
         #newagent is one level under and is not known
         if(newagent.level + 1 == self.neighbourhood.myself.level):# and self.neighbourhood.IP_is_not_in_children(newagent)):
