@@ -50,7 +50,7 @@ class hardware_manager:
             elif (msg["method"]=="get_stat"):
                 self.get_stat(msg)
             elif (msg["method"]=="answer_stat"):
-                self.QtoReceiveCreationSupervisor(msg)
+                self.QtoReceiveCreationSupervisor.put(msg)
 
 
     #thread
