@@ -27,6 +27,7 @@ class neighbour:
             self.hardwareID = uuid.uuid1().hex #random ID to identify agent on hardware 
         else:
             self.hardwareID = hardwareID #if specified, give hardwareID
+        self.isLeader = False
 
     @classmethod
     def asdict(cls, dictagent):

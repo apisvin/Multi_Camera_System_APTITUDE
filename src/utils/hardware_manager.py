@@ -22,6 +22,8 @@ class hardware_manager:
         self.Qtosendbroadcast = Qtosendbroadcast
         self.requestCreationRunning = False
         self.QtoReceiveRequestCreation = Queue()
+        self.creationSupersivorRunning = False
+        self.QtoReceiveCreationSupervisor = Queue()
         self.cpu = 0
         self.ram = 0
         self.launchers = {} #contient l'esemble des launchers sur cette hardware identifiable par hardwareID
@@ -39,10 +41,17 @@ class hardware_manager:
                 threading.Thread(target=l.launch, args=()).start()
             elif (msg["method"]=="remove"):
                 self.remove(msg["spec"]["hardwareID"])
-            elif (msg["method"]=="disappear"):
-                self.dispappear(msg)
+            elif (msg["method"]=="parentDisappeared"):
+                self.parentDisappeared(msg)
+            elif (msg["method"]=="childDisappeared"):
+                self.childDisappeared(msg)
             elif (msg["method"]=="request_creation"):
                 self.QtoReceiveRequestCreation.put(msg)
+            elif (msg["method"]=="get_stat"):
+                self.get_stat(msg)
+            elif (msg["method"]=="answer_stat"):
+                self.QtoReceiveCreationSupervisor(msg)
+
 
     #thread
     def receive_request_creation(self, specdict):
@@ -67,7 +76,7 @@ class hardware_manager:
             l = launcher(agenttype=specdict["agenttype"], level=int(specdict["level"]), DNS=specdict["DNS"], Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.QtoHardwareManager)
             self.add(l)
             threading.Thread(target=l.launch, args=()).start()
-            logging.debug("new agent created on this hardware : {}".format(l.n.myself.__dict__))
+            logging.debug("receive_request_creation : new agent created on this hardware : {}".format(l.n.myself.__dict__))
             #force the new agent to send a init message 
             msg = {"source" : l.n.myself.__dict__,
                 "destination" : "broadcast",
@@ -77,6 +86,42 @@ class hardware_manager:
 
         logging.debug("end of receive_request_creation")
         self.requestCreationRunning = False
+            
+            
+    #thread
+    def creation_supervisor(self, specdict):
+        start = time.time()
+        #clear queue from receiver
+        #self.QtoReceiveRequestCreation.queue.clear()
+        #compute own cost function
+        cost = (self.ram+self.cpu)/2
+        msg_creator_candidate = {"source" : "self",
+                "destination" : "self",
+                "method" : "create",
+                "spec" : specdict}
+        while time.time() - start < 10:
+            try:
+                received = self.QtoReceiveCreationSupervisor.get(timeout=1)
+                if cost > (received["spec"]["cpu"]+received["spec"]["ram"])/2:
+                    msg_creator_candidate["source"] = receved["destination"]
+                    msg_creator_candidate["destination"] = receved["source"]
+                    break
+            except:
+                pass
+        
+        #this hardware_manager has to create the agent
+        if msg_creator_candidate["source"]=="self":
+            #create blank agent with specified agenttype and level
+            l = launcher(agenttype=specdict["agenttype"], level=int(specdict["level"]), DNS="", Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.QtoHardwareManager)
+            self.add(l)
+            threading.Thread(target=l.launch, args=()).start()
+            logging.debug("new agent created on this hardware : {}".format(l.n.myself.__dict__))
+        else:
+            msg_creator_candidate["spec"]["DNS"]=""
+            self.Qtosendunicast.put(msg_creator_candidate)
+
+        logging.debug("end of creationSupersivor")
+        self.creationSupersivorRunning = False
             
 
 
@@ -99,7 +144,7 @@ class hardware_manager:
         removed_launcher.stopFlag.set() #set the flag to stop all threads associated to this agent 
         self.launchers.pop(hardwareID)
     
-    def dispappear(self, received):
+    def parentDisappeared(self, received):
         #create input for cost function:
         load1, load5, load15 = os.getloadavg()
         self.cpu = (load15/os.cpu_count()) * 100         # CPU usage (%)
@@ -124,6 +169,33 @@ class hardware_manager:
             logging.debug("requestion_creation sent to {}".format(neighbour))
             self.Qtosendunicast.put(msg)
 
+    def childDisappeared(self, received):
+        #create input for cost function:
+        load1, load5, load15 = os.getloadavg()
+        self.cpu = (load15/os.cpu_count()) * 100         # CPU usage (%)
+        mem = psutil.virtual_memory()
+        self.ram = mem.percent                               # RAM usage (%)
+
+        #launch thread to receive 
+        if self.creationSupersivorRunning == False:
+            threading.Thread(target=self.creation_supervisor, args=(received["spec"]["disappeared"],)).start()
+            self.creationSupersivorRunning = True
+        #TODO
+            
+    
+    def get_stat(self):
+        #create input for cost function:
+        load1, load5, load15 = os.getloadavg()
+        self.cpu = (load15/os.cpu_count()) * 100         # CPU usage (%)
+        mem = psutil.virtual_memory()
+        self.ram = mem.percent                               # RAM usage (%)
+        #create answer_stat
+        msg = {"source" : received["destination"],
+                "destination" : received["source"],
+                "method" : "answer_stat",
+                "spec" : {"cpu" : self.cpu,
+                            "ram" : self.ram}}
+        self.Qtosendunicast.put(msg)
 
     def get(self, hardwareID):
         return self.launchers[hardwareID]

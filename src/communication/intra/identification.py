@@ -50,6 +50,8 @@ class identification:
                 break #break the loop because the agent quit the network
             elif(received["method"]=="disappear"):
                 self.disappear(received)
+            elif(received["method"]=="forward_disappear"):
+                self.forward_disappear(received)
             elif(received["method"]=="ackquit"):
                 self.ackquit(received)
             elif(received["method"]=="update"):
@@ -145,7 +147,6 @@ class identification:
             #update cluster 
             for dictagent in receptedmsg["spec"]["cluster"]:
                 self.neighbourhood.add_to_cluster(neighbour.asdict(dictagent))
-            logging.info("{}'s cluster is {}".format(self.neighbourhood.myself.DNS, self.neighbourhood.cluster_str()) )
             #send initcluster to each agent in cluster 
             for c in self.neighbourhood.cluster:
                 msg = {"source" : self.neighbourhood.myself.__dict__,
@@ -162,7 +163,6 @@ class identification:
         newagent = neighbour.asdict(dictagent)
         # Update list of child
         self.neighbourhood.update_children(newagent)
-        logging.debug("Update children : {}".format(self.neighbourhood.get_children_info()))
 
     def received_initcluster(self, receptedmsg):
         """
@@ -179,26 +179,27 @@ class identification:
         la reception du message quit signifie que l agent souhaite quitter le reseau.
         L agent doit alors le dire a l ensemble de ses connexions en disant qu'il disparait (disappear message)
         """
-        all_neighbours = self.neighbourhood.get_all_neighbours()
-        for n in all_neighbours:
+        children = self.neighbourhood.get_children()
+        for c in children:
             msg = {"source" : self.neighbourhood.myself.__dict__,
-                "destination" : n.__dict__,
+                "destination" : c.__dict__,
                 "method" : "disappear",
                 "spec" : {}}
             self.dicqueue.Qtosendunicast.put(msg)
-        
+        parent = self.neighbourhood.get_parent()
+        if parent!= 0:
+            msg = {"source" : self.neighbourhood.myself.__dict__,
+                "destination" : parent.__dict__,
+                "method" : "disappear",
+                "spec" : {}}
+            self.dicqueue.Qtosendunicast.put(msg)
 
 
     def disappear(self, receptedmsg):
         """
         reception du message disappear signifie que l agent source veut sortir du réseau
-        etapes à gérer : 
-           le message recu correspond a mon master :
-               update mes infos perso
-               prevenir les autres avec Look()
-        if agent == mon parent -> update parent + chercher nouveau parent en envoyant look
         """
-        logging.debug("disappear proc ")
+        #my parent disappeared
         if(self.neighbourhood.parent != 0
                     and self.neighbourhood.parent.DNS == receptedmsg["source"]["DNS"]): #my parent disappeared
             logging.info("{}'s parent disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"])) 
@@ -208,25 +209,47 @@ class identification:
             #spec are information about disappeared agent 
             msg = {"source" : self.neighbourhood.myself.__dict__,
                 "destination" : "hardware_manager",
-                "method" : "disappear",
+                "method" : "parentDisappeared",
                 "spec" : {"agenttype" : receptedmsg["source"]["agenttype"],
                             "level" : receptedmsg["source"]["level"],
                             "DNS" : receptedmsg["source"]["DNS"]}}
             self.dicqueue.QtoHardwareManager.put(msg)
+        #my child disappeared && not a leader (its follower cannot recreate the agent 
+        elif(self.neighbourhood.isChildrenFollower(receptedmsg["source"]["DNS"])):
+            logging.debug("{} : follower child {} disappeared".format(self.neighbourhood.myself.DNS, receptedmsg["source"]["DNS"]))
+            #delete from children
+            self.neighbourhood.deleteChildwithDNS(receptedmsg["source"]["DNS"])
+            #tell other children that this agent disappeared
+            children = self.neighbourhood.get_children()
+            for c in children:
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                    "destination" : c.__dict__,
+                    "method" : "forward_disappear",
+                    "spec" : {"disappeared" : receptedmsg["source"]}}
+                self.dicqueue.Qtosendunicast.put(msg)
+            #tell hardware_manager to recreate missing neighbour
+            msg = {"source" : self.neighbourhood.myself.__dict__,
+                    "destination" : "hardware_manager",
+                    "method" : "childDisappeared",
+                    "spec" : {"disappeared" : receptedmsg["source"]}}
+            self.dicqueue.QtoHardwareManager.put(msg)
+            #ask all hardware_manager of children to send their stat
+            hardware_manager_children = self.neighbourhood.get_hardware_manager_children()
+            for h in hardware_manager_children:
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                    "destination" : h.__dict__,
+                    "method" : "get_stat",
+                    "spec" : {}}
+                self.dicqueue.Qtosendunicast.put(msg)
+            #procedure to recreate disappeared child
+        
 
-
-        """OLD PROCEDURE OF DISAPPEAR
-        if(self.neighbourhood.myself.agentID == receptedmsg["source"]["masterID"]): #my child disappeared
-            logging.info("{}'s child disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"]))
-            self.neighbourhood.deleteChild(receptedmsg["source"]["agentID"])
-        elif(self.neighbourhood.myself.masterID == receptedmsg["source"]["agentID"]): #my master disappeared
-            logging.info("{}'s parent disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"]))
-            self.neighbourhood.myself.update_level_master()
-            self.neighbourhood.parent = 0 #reset parent 
-            #self.look()
-        elif(self.neighbourhood.myself.level == receptedmsg["source"]["level"]): #a cluster member dispappeared
-            logging.info("{}'s cluster member disappeared : {}".format(self.neighbourhood.myself.DNS, receptedmsg["source"]))
-            self.neighbourhood.deleteCluster(receptedmsg["source"]["agentID"])"""
+    def forward_disappear(self, receptedmsg):
+        #source is in cluster
+        if(self.neighbourhood.isDNSinCluster(receptedmsg["spec"]["disappeared"]["DNS"])):
+            self.neighbourhood.deleteClusterwhitDNS(receptedmsg["spec"]["disappeared"]["DNS"])
+            logging.debug("{} : neighbour {} in cluster disappeared".format(self.neighbourhood.myself.DNS, receptedmsg["spec"]["disappeared"]["DNS"]))
+            
 
     def look(self):
         """ 

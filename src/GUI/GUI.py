@@ -12,7 +12,7 @@ class App(Tk):
         self.Qtosendbroadcast = Qtosendbroadcast
 
         self.title("Managing agents")
-        self.geometry("300x500")
+        self.geometry("500x800")
 
         #Title
         ttk.Label(self, text="").pack()
@@ -64,7 +64,7 @@ class App(Tk):
         ttk.Label(self, text="REMOVE AGENT").pack()
 
         #Listing agents 
-        self.list_agent = Listbox()
+        self.list_agent = Listbox(height=20)
         self.list_agent.pack()
         self.index = 1
 
@@ -99,6 +99,10 @@ class App(Tk):
             if launcher.n.children:
                 self.list_agent.insert(END, "Children : ")
                 for c in launcher.n.children:
+                    self.list_agent.insert(END, ("     ", c.DNS))
+            if launcher.n.cluster:
+                self.list_agent.insert(END, "Cluster : ")
+                for c in launcher.n.cluster:
                     self.list_agent.insert(END, ("     ", c.DNS))
 
 

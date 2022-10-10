@@ -94,6 +94,9 @@ def put_on_queue(dictReceived, dicqueue):
 
     if(dictReceived["method"] == "disappear"):
         dicqueue.Qtoidentification.put(dictReceived)
+        
+    if(dictReceived["method"] == "forward_disappear"):
+        dicqueue.Qtoidentification.put(dictReceived)
 
     if(dictReceived["method"] == "look"):
         dicqueue.Qtoidentification.put(dictReceived)
@@ -116,4 +119,8 @@ def put_on_queue(dictReceived, dicqueue):
     if(dictReceived["method"] == "request_creation"):
         dicqueue.QtoHardwareManager.put(dictReceived)
         
-    
+    if(dictReceived["method"] == "get_stat"):
+        dicqueue.QtoHardwareManager.put(dictReceived)
+        
+    if(dictReceived["method"] == "answer_stat"):
+        dicqueue.QtoHardwareManager.put(dictReceived)  

@@ -35,7 +35,10 @@ class watcher():
         while self.stopFlag.is_set()==False:
             try:
                 received = self.dicqueue.Qtowatcher.get(timeout=self.delay)
-                self.neighbourhood.update_agent_age(received["source"]["hardwareID"])
+                #update age of neighbour
+                self.neighbourhood.update_agent_age_leader(received["source"]["DNS"], received["spec"]["isLeader"])
+                #update its status of leader
+                
             except:
                 pass
         logging.debug("receive_alive stopped")
@@ -49,14 +52,14 @@ class watcher():
                 msg = {"source" : self.neighbourhood.myself.__dict__,
                     "destination" : child.__dict__,
                     "method" : "alive",
-                    "spec" : {}}
+                    "spec" : {"isLeader" : self.neighbourhood.is_leader()}}
                 self.dicqueue.Qtosendunicast.put(msg)
             parent = self.neighbourhood.get_parent()
             if(parent != 0): #parent exists
                 msg = {"source" : self.neighbourhood.myself.__dict__,
                     "destination" : parent.__dict__,
                     "method" : "alive",
-                    "spec" : {}}
+                    "spec" : {"isLeader" : self.neighbourhood.is_leader()}}
                 self.dicqueue.Qtosendunicast.put(msg)
             time.sleep(self.delay) #wait delay seconds
         logging.debug("send_alive stopped")
