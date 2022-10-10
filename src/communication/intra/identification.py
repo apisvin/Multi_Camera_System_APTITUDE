@@ -41,6 +41,8 @@ class identification:
             if(received["method"]=="init"):
                 logging.debug("init received")
                 self.ackinit(received)
+            if(received["method"]=="ackinit"):
+                    self.received_ackinit(received)
             elif(received["method"]=="ackparent"):
                 self.received_ackparent(received)
             elif(received["method"]=="initcluster"):
@@ -86,15 +88,11 @@ class identification:
         (sa nouvelle DNS, ID, ...)
         """
         dictagent = receptedmsg["source"]
-        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
-        #for intern communication
+        newagent = neighbour.asdict(dictagent)
         logging.debug("init message is : {}".format(receptedmsg))
-        #newagent is one level under and is not known
-        if(newagent.level + 1 == self.neighbourhood.myself.level):# and self.neighbourhood.IP_is_not_in_children(newagent)):
-            # Check num of child
-            #numbneigh = len(self.neighbourhood.get_children())
-            # Update DNS's of child
-            #DNSagent  = newagent.agenttype + str(numbneigh) +"."+ self.neighbourhood.myself.DNS
+        #newagent is one level under and no DNS
+        if(newagent.level + 1 == self.neighbourhood.myself.level
+           and newagent.DNS == ""):
             DNSagent = self.neighbourhood.create_new_DNS(newagent)
             newagent.update_all_DNS(DNSagent, self.neighbourhood.myself.DNS)
             # create list of agent in the new agent's cluster (all children of myself)
@@ -105,7 +103,25 @@ class identification:
                 "method" : "ackinit",
                 "spec" : {"cluster":cluster}}
             self.dicqueue.Qtosendunicast.put(msg)
-        #source agent is one level above, parent is null and ["spec"]["recreate"] is True
+        #new agent is one level under
+        #and its DNS match mine as parent
+        #and newagent is recreated
+        if(newagent.level + 1 == self.neighbourhood.myself.level
+           and self.neighbourhood.matchingDNSasParent(newagent.DNS)
+           and "recreated" in receptedmsg["spec"]):
+            logging.debug("init from ex child")
+            #send ackinit to tell newagent that I am its parent
+            # create list of agent in the new agent's cluster (all children of myself)
+            cluster = self.neighbourhood.get_children_asdict()
+            # Creation of message to send back to child
+            msg = {"source" : self.neighbourhood.myself.__dict__,
+                "destination" : newagent.__dict__,
+                "method" : "ackinit",
+                "spec" : {"cluster":cluster}}
+            self.dicqueue.Qtosendunicast.put(msg)
+        
+        #source agent is one level above,
+        #parent is null and ["spec"]["recreate"] exists
         elif(newagent.level == self.neighbourhood.myself.level+1
                 and self.neighbourhood.parent == 0 
                 and "recreated" in receptedmsg["spec"]):
@@ -127,6 +143,7 @@ class identification:
         cela met a jour les informations recu dans le message ackinit 
         envoit un ackparent au master afin qu il puisse mettre a jour sa liste d enfant 
         """
+        logging.debug("received ackinit for {}".format(self.neighbourhood.myself))
         #if i don t have a parent 
         if(self.neighbourhood.parent==0): 
             dictmyself = receptedmsg["destination"]

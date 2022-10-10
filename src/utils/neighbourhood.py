@@ -230,3 +230,8 @@ class neighbourhood:
             i=i+1
             time.sleep(1)
         return self.myself.DNS+"."+newagent.agenttype+str(i)
+    
+    def matchingDNSasParent(self, DNS):
+        """check if DNS is a potential child
+        condition is verified if first fields of DNS are my DNS"""
+        return ".".join(DNS.split(".")[:-1]) == self.myself.DNS
