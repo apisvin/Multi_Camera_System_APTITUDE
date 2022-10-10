@@ -242,6 +242,19 @@ class identification:
                     "spec" : {}}
                 self.dicqueue.Qtosendunicast.put(msg)
             #procedure to recreate disappeared child
+        #if source is in children && a leader
+        elif(self.neighbourhood.isDNSinChildren(receptedmsg["source"]["DNS"])):
+            #delete from children
+            self.neighbourhood.deleteChildwithDNS(receptedmsg["source"]["DNS"])
+            #tell other children that this agent disappeared
+            children = self.neighbourhood.get_children()
+            for c in children:
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                    "destination" : c.__dict__,
+                    "method" : "forward_disappear",
+                    "spec" : {"disappeared" : receptedmsg["source"]}}
+                self.dicqueue.Qtosendunicast.put(msg)
+            
         
 
     def forward_disappear(self, receptedmsg):
