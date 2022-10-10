@@ -204,6 +204,9 @@ class hardware_manager:
         return hardwareID in self.launchers
     
     def get_dicqueue(self, hardwareID):
-        return self.launchers[hardwareID].dicqueue
+        try:
+            return self.launchers[hardwareID].dicqueue
+        except:
+            return -1
     
 

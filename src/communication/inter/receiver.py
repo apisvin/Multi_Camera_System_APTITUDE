@@ -69,7 +69,7 @@ class receiver():
                 #chercher la bonne dicqueue dans manager_hardware
                 dicqueue = self.hardware_manager.get_dicqueue(dictReceived["destination"]["hardwareID"])
                 if(dicqueue==-1):
-                    logging.info("message received (destination is not on hardware) : {}".format(dictReceived))
+                    logging.warning("message received (destination is not on hardware) : {}".format(dictReceived))
                 else:
                     put_on_queue(dictReceived, dicqueue)
                 
