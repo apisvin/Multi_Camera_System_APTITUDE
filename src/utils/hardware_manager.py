@@ -183,7 +183,7 @@ class hardware_manager:
         #TODO
             
     
-    def get_stat(self):
+    def get_stat(self, received):
         #create input for cost function:
         load1, load5, load15 = os.getloadavg()
         self.cpu = (load15/os.cpu_count()) * 100         # CPU usage (%)

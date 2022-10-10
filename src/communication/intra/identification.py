@@ -237,7 +237,7 @@ class identification:
             hardware_manager_children = self.neighbourhood.get_hardware_manager_children()
             for h in hardware_manager_children:
                 msg = {"source" : self.neighbourhood.myself.__dict__,
-                    "destination" : h.__dict__,
+                    "destination" : h,
                     "method" : "get_stat",
                     "spec" : {}}
                 self.dicqueue.Qtosendunicast.put(msg)
