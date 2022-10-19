@@ -80,7 +80,7 @@ class App(Tk):
 
     def add_clicked(self, DNS, agenttype, level):
         #launcher thread
-        l = launcher(agenttype=agenttype, level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
+        l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
         self.hardware_manager.add(l)
         threading.Thread(target=l.launch, args=()).start()
         self.list_agent.insert(END, (l.n.myself.DNS, l.n.myself.hardwareID))

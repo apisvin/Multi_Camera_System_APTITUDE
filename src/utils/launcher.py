@@ -10,6 +10,7 @@ from communication.intra.identification import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
+from agent.detection import *
 import logging
 
 
@@ -53,11 +54,12 @@ class launcher:
 
     def launch_detection(self):
         #ATTENTION : pas oublier de recréer le fichier pickle avant tout
-        create_pickle()
-        calib = Calib.load("/home/pi/TFE_TrackingObjects/local_data/pickle/calib.pickle")
-        labo=cv2.imread("/home/pi/TFE_TrackingObjects/local_data/images_labo/image_repere.png")
-        c = camera(self.stopFlag, labo, calib, self.dicqueue, True)
-        threading.Thread(target=c.launch_camera, args=()).start()
+        #create_pickle()
+        #calib = Calib.load("/home/pi/TFE_TrackingObjects/local_data/pickle/calib.pickle")
+        #labo=cv2.imread("/home/pi/TFE_TrackingObjects/local_data/images_labo/image_repere.png")
+        calib = 0
+        d = detection(self.stopFlag, calib, self.dicqueue, True)
+        threading.Thread(target=d.launch, args=()).start()
         
     def launch_trackers(self):
         t = trackers(self.stopFlag, self.n, self.dicqueue, self.display_kalman)
