@@ -8,33 +8,33 @@ import logging
 
 class identification:
     """
-    cette classe de permet de lancer la tache a la creation d un arbre dynamique compose des agents dans le reseau
+    This class is associated to one agent. Its role is to discover and integrate other agent as neighbour 
+    to the class neighbourhood. 
     """
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
-        stopFlag : un flag permettant d arreter la tache en cours 
-        neighbourhood : classe contenant l ensemble des agents dans le voisinage de l agent qui a lance identification
-        dicqueue : dictionnaire de queue contenant l ensemble des queues qui permettent la communication entre taches 
+        stopFlag : a flag to stop the thread running loop_identication
+        neighbourhood : a class containing all neighbours of the agent
+        dicqueue : a class containing all queues to transmits messages between threads 
         """
         self.stopFlag = stopFlag        #set flag to kill all thread associated to an agent 
         
-        self.dicqueue = dicqueue        #liste des queues
+        self.dicqueue = dicqueue
                 
         self.neighbourhood = neighbourhood
         
     def loop_identification(self):
         """
-        boucle permettant de traiter les differents messages recu relatifs aux connections entre agents
+        loop to process the different messages received concerning the connections between agents
         """
         while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
-            self.init() #envoyer un msg init
+            self.init() 
             if(not(self.dicqueue.Qtoidentification.empty())):
                 received = self.dicqueue.Qtoidentification.get()
                 if(received["method"]=="ackinit"):
                     self.received_ackinit(received)
                     
-        self.dicqueue.Qtoidentification = Queue() #reset a new queue with bigger buffer
         while self.stopFlag.is_set()==False:
             received = self.dicqueue.Qtoidentification.get()
             #casing of msg
@@ -54,25 +54,12 @@ class identification:
                 self.disappear(received)
             elif(received["method"]=="forward_disappear"):
                 self.forward_disappear(received)
-            elif(received["method"]=="ackquit"):
-                self.ackquit(received)
-            elif(received["method"]=="update"):
-                self.ackupdate(received)
-            """elif(received["method"]=="look"):
-                if(received["source"]["masterID"] == self.neighbourhood.myself.agentID):
-                    # some agent is looking for me for being its master
-                    self.acklook(received)
-            elif(received["method"]=="acklook"):
-                self.received_acklook(received)
-            elif(received["method"]=="detect"):
-                self.detect(received)"""
         logging.debug("identification stopped")
                     
     def init(self):
         """
-        le message init s envoit a l'ensemble des agents du reseau
-        il a pour but de trouver un master 
-        le message contient toutes les infos de l agent qui envoit init 
+        init messages are sent to all neighbours in the network (broadcast)
+        the goal is to find a parent
         """
         msg = {"source" : self.neighbourhood.myself.__dict__,
                 "destination" : "broadcast",
@@ -83,9 +70,8 @@ class identification:
         
     def ackinit(self, receptedmsg):
         """
-        ackinit est envoye apres la reception d un init recu d un agent qui appartient a un nivau inferieur 
-        le message ackinit contient les infos de l agent qui envoit le message et les nouvelles infos de celui qui le recevra
-        (sa nouvelle DNS, ID, ...)
+        ackinit messages are sent after reception of an init message
+        to an agent that is directly under this one
         """
         dictagent = receptedmsg["source"]
         newagent = neighbour.asdict(dictagent)
@@ -103,6 +89,7 @@ class identification:
                 "method" : "ackinit",
                 "spec" : {"cluster":cluster}}
             self.dicqueue.Qtosendunicast.put(msg)
+        
         #new agent is one level under
         #and its DNS match mine as parent
         #and newagent is recreated
@@ -139,9 +126,9 @@ class identification:
         
     def received_ackinit(self, receptedmsg):
         """
-        a la reception d un ackinit venant du parent,
-        cela met a jour les informations recu dans le message ackinit 
-        envoit un ackparent au master afin qu il puisse mettre a jour sa liste d enfant 
+        process received ackinit message : 
+            parent neighbour is created and add to neighbourhood 
+            cluster is extracted and initcluster is sent to all members of cluster
         """
         logging.debug("received ackinit for {}".format(self.neighbourhood.myself))
         #if i don t have a parent 
@@ -174,7 +161,7 @@ class identification:
         
     def received_ackparent(self, receptedmsg):
         """
-        le message ackparent recu permet de mettre a jour la liste d 'enfant avec le nouvel enfant 
+        ackparent is received to confirm that this agent become parent of source  
         """
         dictagent = receptedmsg["source"]
         newagent = neighbour.asdict(dictagent)
@@ -193,8 +180,9 @@ class identification:
                 
     def quit(self, receptedmsg):
         """
-        la reception du message quit signifie que l agent souhaite quitter le reseau.
-        L agent doit alors le dire a l ensemble de ses connexions en disant qu'il disparait (disappear message)
+        the reception of the quit message means that the agent wants to leave the network.
+        The agent must then tell all its connections that it is disappearing (disappear message)
+        Disappear messages are only sent horizontally  
         """
         children = self.neighbourhood.get_children()
         for c in children:
@@ -214,7 +202,7 @@ class identification:
 
     def disappear(self, receptedmsg):
         """
-        reception du message disappear signifie que l agent source veut sortir du réseau
+        receiving the message disappear means that the source agent wants to leave the network
         """
         #my parent disappeared
         if(self.neighbourhood.parent != 0
@@ -275,98 +263,11 @@ class identification:
         
 
     def forward_disappear(self, receptedmsg):
+        """
+        forward_disappear is sent by a parent to all its children when one of them leave
+        """
         #source is in cluster
         if(self.neighbourhood.isDNSinCluster(receptedmsg["spec"]["disappeared"]["DNS"])):
             self.neighbourhood.deleteClusterwhitDNS(receptedmsg["spec"]["disappeared"]["DNS"])
             logging.debug("{} : neighbour {} in cluster disappeared".format(self.neighbourhood.myself.DNS, receptedmsg["spec"]["disappeared"]["DNS"]))
             
-
-    def look(self):
-        """ 
-        permet de chercher apres un nouveau parent
-        la destination est "children" car la classe n a pas accès a l ensemble des enfants mais la classe sender a acces
-        """
-        msg = {"source" : self.neighbourhood.myself.__dict__,
-                "destination" : "children",
-                "method" : "look",
-                "spec" : {}
-            }
-        self.dicqueue.Qtosendbroadcast.put(msg)
-        
-    def acklook(self, receptedmsg):
-        """
-        de la meme maniere que ackinit mais pour la reception d un look
-        les parametres de l 'agent source sont modifies afin qu il puisse se lier au nouveau parent 
-        """
-        dictagent = receptedmsg["source"]
-        newagent = neighbour(ip=dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"], hardwareID=dictagent["hardwareID"])
-
-        DNSlist = dictagent["DNS"].split(".")
-        separator = "."
-        newDNS = separator.join([DNSlist[0], self.neighbourhood.myself.DNS])
-        #update DNS
-        newagent.update_all_DNS(newDNS, dictagent["masterDNS"])
-        #add new agent to childhood
-        self.neighbourhood.update_children_without_level(newagent)
-        #send resp
-        msg = {"source" : self.neighbourhood.myself.__dict__,
-                "destination" : newagent.__dict__,
-                "method" : "acklook",
-                "spec" : {"child" : newagent.__dict__}
-            }
-        self.dicqueue.Qtosendunicast.put(msg)
-        
-        
-        
-    def received_acklook(self, receptedmsg):
-        """
-        reception du acklook
-        toutes les nouvelles infos sont dans "destination" pour l agent concerne et "source" pour le nouveau parent 
-        """
-        # update information from new parent
-        self.neighbourhood.myself.update_DNS(receptedmsg["destination"]["DNS"])
-        newParentdict = receptedmsg["source"]
-        newParent = neighbour(ip=newParentdict["ip"], agenttype=newParentdict["agenttype"], level=newParentdict["level"], hardwareID=newParentdict["hardwareID"])
-        newParent.update_all_DNS(newDNS=newParentdict["DNS"], newmasterDNS=newParentdict["masterDNS"])
-        self.neighbourhood.update_parent_without_level(newParent)
-        logging.debug("New parent of " +  self.neighbourhood.myself.DNS + " is " + self.neighbourhood.get_parent().DNS)
-        #launch update to tell children that my DNS has changed
-        self.update()
-        
-    #tell children that DNS has changed 
-    def update(self):
-        """
-        permet de faire parcourir les nouvelles infos aux enfants
-        """
-        msg = {"source" : self.neighbourhood.myself.__dict__,
-                "destination" : "children",
-                "method" : "update",
-                "spec" : {"children" : self.neighbourhood.get_children()}
-        }
-        self.dicqueue.Qtosendunicast.put(msg)
-    
-    #change new DNS of master
-    def ackupdate(self, receptedmsg):
-        """
-        a la reception d un update :
-        change les info selon l update (DNS) et itere l update si il y a des enfants 
-        """
-        newParentdict = receptedmsg["source"]
-        self.neighbourhood.myself.update_master_DNS(newParentdict["DNS"])
-        #my DNS
-        DNSlist = self.neighbourhood.myself.DNS.split(".")
-        separator = "."
-        newDNS = separator.join([DNSlist[0], newParentdict["DNS"]])
-        self.neighbourhood.myself.update_DNS(newDNS)
-        #if children -> launch update
-        if(len(self.neighbourhood.get_children())!=0):
-            self.update()
-            
-    def detect(self, receptedmsg):
-        receptedmsg["source"] = self.neighbourhood.myself.__dict__
-        receptedmsg["destination"] = self.neighbourhood.get_parent().__dict__
-        if receptedmsg["destination"] != 0:
-            self.dicqueue.Qtosendunicast.put(receptedmsg)
-        
-        
-    
