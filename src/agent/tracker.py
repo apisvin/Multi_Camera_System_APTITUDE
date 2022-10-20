@@ -173,7 +173,7 @@ class kalman():
             ystate = [x[1] for x in self.statetoplot]
             if self.Qtoplot != 0:
                 self.Qtoplot.put([self.state[0], self.state[1], str(self.classID)+"_"+str(self.objectID)]) 
-            
+            """
             # send object msg to upper level
             if(self.neighbourhood.get_parent() != 0):
                 #if I have a parent, i send my output as a detection
@@ -200,97 +200,9 @@ class kalman():
                             "y" : self.state[1],
                             "z" : constants.ZPLAN}}
                 self.dicqueue["Qtosendunicast"].put(msg)
-            
+            """
         
-    def process_kalman(self):
-        reception_t = time.time()
-        while True:
-            # Prediction step
-            self.KF.predict()
-            camera = []
-            # Fusion of measurments with multiple updates
-            for n in range(len(self.neighbourhood.get_children())):
-                msg = self.dicqueue["Qfromrectokalman"].get()
-                x = msg["spec"]["objects"]["position"]["x"]
-                y = msg["spec"]["objects"]["position"]["y"]
-                if(self.t == 0): #first observation
-                    self.KF.x = np.array([x, y, 0, 0, 0, 0]) # initial state (location, velocity and acceleration)
-                if(self.t != 0):
-                    reception_t = time.time() 
-                    self.dt = reception_t - self.t
-                    #print("message time : ", msg["time"])
-                    #print("reception time : ", reception_t)
-                    #print("dt : ", self.dt)
-                    self.KF.F = np.array([[1.,0., self.dt, 0., self.dt**2, 0.],
-                                [0.,1., 0., self.dt, 0, self.dt**2],
-                                [0.,0., 1., 0., self.dt, 0.],
-                                [0.,0., 0., 1., 0., self.dt],
-                                [0.,0., 0., 0., 1., 0.],
-                                [0.,0., 0., 0., 0., 1.]])          # update state transition matrix
-                    #self.KF.Q = Q_discrete_white_noise(6, self.dt, .1) # process uncertainty
-                    self.KF.Q = np.eye(6)*self.dt
-                    obs = np.array([x, y])
-                    camera.append(obs)
-                    self.KF.update(obs)
-                self.t = reception_t
-                    #self.process_observation(obs)
-            self.state = self.KF.x
-            if(len(self.neighbourhood.get_children())):
-                # send output of kalman to main for print in real time
-                self.dicqueue["Qfromkalmantomain"].put([self.state, camera])
-                # send object msg to upper level
-                # dictionnary for detected object
-                if(self.neighbourhood.get_parent() != 0):
-                    #if I have a parent, i send my output as a detection
-                    objectID = uuid.uuid3(uuid.NAMESPACE_DNS, constants.COLOR).hex
-                    classID = constants.COLOR
-                    position = {"x" : self.state[0],
-                                "y" : self.state[1],
-                                "z" : constants.ZPLAN}
-                    velocity = {"x'" : 0.0,
-                                "y'" : 0.0,
-                                "z'" : 0.0}
-                    bbox = {"w" : 0.0,
-                            "h" : 0.0,
-                            "bboxFormat" : "",
-                            "confInt" : 0.0}
-                    detobject = {"objectID" : objectID,
-                                 "classID" : classID,
-                                 "position" : position,
-                                 "velocity" : velocity,
-                                 "bbox" : bbox}
-                    # dictionnary for msg to send
-                    msg = {"source" : "",
-                           "destination" : "",
-                           "method" : "detect",
-                           "spec" : {"numbersObjects" : 1,
-                                     "objects" : detobject}}
-                    self.dicqueue["Qtosendunicast"].put(msg)
-            
-    def old_process_kalman(self):
-        reception_t = time.time()
-        while True:
-            msg = self.Qfromrec.get()
-            if(self.t == 0): #first observation
-                self.KF.x = np.array([msg["objects"]["position"]["x"], msg["objects"]["position"]["y"], 0, 0]) # initial state (location and velocity)
-            if(self.t != 0):
-                reception_t = time.time() 
-                self.dt = reception_t - self.t
-                #print("message time : ", msg["time"])
-                #print("reception time : ", reception_t)
-                #print("dt : ", self.dt)
-                self.KF.F = np.array([[1.,0., self.dt, 0.],
-                                        [0.,1., 0., self.dt],
-                                        [0.,0., 1., 0.],
-                                        [0.,0., 0., 1.]])          # update state transition matrix
-                self.KF.Q = Q_discrete_white_noise(4, self.dt, .1) # process uncertainty
-                obs = np.array([msg["objects"]["position"]["x"], msg["objects"]["position"]["y"]])
-                self.process_observation(obs)
-                self.state = self.KF.x
-                self.Qtomain.put([self.state, obs])
-            self.t = reception_t
-            time.sleep(0.01)
-            
+    
         
 def write_state(filename, state):
     statestr = np.array2string(state, precision=4, separator=',')
