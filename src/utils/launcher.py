@@ -11,6 +11,8 @@ from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
 from agent.detection import *
+from agent.tracker import *
+from calibration.calibrate import *
 import logging
 
 
@@ -39,7 +41,7 @@ class launcher:
         elif(self.n.myself.agenttype == "detection"):
             self.launch_detection()
         elif(self.n.myself.agenttype == "tracking"):
-            self.launch_trackers()
+            self.launch_tracker()
         
 
     
@@ -53,16 +55,26 @@ class launcher:
         threading.Thread(target=w.check_age, args=()).start()
 
     def launch_detection(self):
-        #ATTENTION : pas oublier de recréer le fichier pickle avant tout
-        #create_pickle()
-        #calib = Calib.load("/home/pi/TFE_TrackingObjects/local_data/pickle/calib.pickle")
-        #labo=cv2.imread("/home/pi/TFE_TrackingObjects/local_data/images_labo/image_repere.png")
-        calib = 0
+        #calibration
+        image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/src/local_data/image_calibration.png')
+
+        aruco_3D = np.array([[0.,0.,0.],
+                            [100.,0.,0.],
+                            [0.,100.,0.],
+                            [-100.,0.,0.],
+                            [0.,-100.,0.],
+                            [100.,100.,0.],
+                            [-100.,100.,0.],
+                            [-100.,-100.,0.],
+                            [100.,-100.,0.]], dtype='float32')
+        ids_3D = np.array([0,10,12,14,16,18,20,22,24])
+        (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
+
         d = detection(self.stopFlag, calib, self.dicqueue, True)
         threading.Thread(target=d.launch, args=()).start()
         
-    def launch_trackers(self):
-        t = trackers(self.stopFlag, self.n, self.dicqueue, self.display_kalman)
+    def launch_tracker(self):
+        t = tracker(self.stopFlag, self.n, self.dicqueue)
         #k = kalman(self.n, self.dicqueue)
-        threading.Thread(target=t.launch_trackers, args=()).start()
+        threading.Thread(target=t.launch_tracker, args=()).start()
         

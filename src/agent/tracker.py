@@ -6,6 +6,7 @@ import threading
 import matplotlib.pyplot as plt
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
+from collections import deque
 
 
 class tracker():
@@ -29,7 +30,7 @@ class tracker():
         obj_counter = 0
         while self.stopFlag.is_set()==False:
             # take msh on the queue
-            msg = self.dicqueue["Qtotracker"].get()
+            msg = self.dicqueue.Qtotracker.get()
             
             for detobject in msg["spec"]["objects"]:            
                 # choose the corresponding tracker (kalman filter)
@@ -80,17 +81,18 @@ class tracker():
         plt.axis([-250, 250, -250, 250])
         ax = fig.add_subplot(111)
         marker = 0
+        dicplot = {}
         while self.stopFlag.is_set()==False:
             #print("length Qtoplot = ", self.Qtoplot.qsize())
             xstate, ystate, kalman_id = self.Qtoplot.get()
-            if(str(kalman_id) in self.dicplot): #line exists for kalman_id
+            if(str(kalman_id) in dicplot): #line exists for kalman_id
                 #print new data for this plot
-                self.dicplot[str(kalman_id)].set_xdata(xstate)
-                self.dicplot[str(kalman_id)].set_ydata(ystate)
+                dicplot[str(kalman_id)].set_xdata(xstate)
+                dicplot[str(kalman_id)].set_ydata(ystate)
             else:
                 #create new plot and add to dicplot
-                self.dicplot[str(kalman_id)], = ax.plot(xstate,ystate,list_marker[marker], label="object "+str(kalman_id))
-                ax.legend()
+                dicplot[str(kalman_id)], = ax.plot(xstate,ystate,list_marker[marker], label="object "+str(kalman_id))
+                #ax.legend()
             fig.canvas.draw()
             fig.canvas.flush_events()
                

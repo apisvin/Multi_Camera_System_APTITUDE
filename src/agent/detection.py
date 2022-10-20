@@ -81,24 +81,9 @@ class detection:
                     position = (int(corners[0][0]), int(corners[0][1]))
                     positionText = (int(corners[0][0]), int(corners[0][1])-15)
                     cv2.circle(frame, position, 12, (0, 0, 255), -1)
-                    cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA)  
-
-                    #Add frame coordinates in msg      
-                    objectID = int(markerID)
-                    classID = "aruco"
-                    position = {"x" : int(corners[0][0]),
-                                "y" : int(corners[0][1])}
-                    bbox = {"w" : 0,
-                            "h" : 0,
-                            "bboxFormat" : "rectangle",
-                            "confInt" : 0.0}
-                    detobject = {"objectID" : objectID,
-                                 "classID" : classID,
-                                 "position" : position,
-                                 "bbox" : bbox}
-                    objects.append(detobject)
-                """
-                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners[0][0]), int(corners[0][1])), Z = constants.ZPLAN)
+                    cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
+                
+                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners[0][0]), int(corners[0][1])), Z = 0)
 
                     # dictionnary for detected object
                     objectID = int(markerID)
@@ -119,7 +104,7 @@ class detection:
                                  "velocity" : velocity,
                                  "bbox" : bbox}
                     objects.append(detobject)
-            """
+            
             
             if(len(objects)>0):
                 # dictionnary for msg to send
@@ -128,7 +113,7 @@ class detection:
                        "method" : "detect",
                        "spec" : {"numbersObjects" : len(objects),
                                  "objects" : objects}}
-                self.dicqueue["Qtoidentification"].put(msg)
+                self.dicqueue.Qtoidentification.put(msg)
             ####################################################
             if self.display:
                 frameResized = cv2.resize(frame, (960,540))

@@ -54,7 +54,7 @@ class identification:
                 self.disappear(received)
             elif(received["method"]=="forward_disappear"):
                 self.forward_disappear(received)
-            elif(received["method"]=="forward_disappear"):
+            elif(received["method"]=="detect"):
                 self.detect(received)
         logging.debug("identification stopped")
                     
