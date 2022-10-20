@@ -53,27 +53,9 @@ class sender:
                 put_on_queue(msg, dicqueue_dest)
             #send msg on network
             else:                    
-                if(msg["method"]=="update"):
-                    children = msg["spec"]["children"]
-                    msg["spec"].pop("children")
-                    for child in children:
-                        addr = (child.ip, PORT)
-                        msg["destination"] = child.__dict__
-                        msgJson = json.dumps(msg)
-                        s_unicast.sendto(msgJson.encode(), addr)
- 
-                elif(msg["method"]=="detect"):
-                    #return a list of agent tracking
-                    if(msg["destination"] != 0): #if there is a tracker
-                        addr = (msg["destination"]["ip"], PORT)
-                        msgJson = json.dumps(msg)
-                        s_unicast.sendto(msgJson.encode(), addr)
-                    
-                    
-                else:
-                    addr = (msg["destination"]["ip"], PORT)
-                    msgJson = json.dumps(msg)
-                    s_unicast.sendto(msgJson.encode(), addr)
+                addr = (msg["destination"]["ip"], PORT)
+                msgJson = json.dumps(msg)
+                s_unicast.sendto(msgJson.encode(), addr)
                     
                 
                     

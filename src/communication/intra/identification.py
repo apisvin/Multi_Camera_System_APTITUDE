@@ -54,6 +54,8 @@ class identification:
                 self.disappear(received)
             elif(received["method"]=="forward_disappear"):
                 self.forward_disappear(received)
+            elif(received["method"]=="forward_disappear"):
+                self.detect(received)
         logging.debug("identification stopped")
                     
     def init(self):
@@ -270,4 +272,14 @@ class identification:
         if(self.neighbourhood.isDNSinCluster(receptedmsg["spec"]["disappeared"]["DNS"])):
             self.neighbourhood.deleteClusterwhitDNS(receptedmsg["spec"]["disappeared"]["DNS"])
             logging.debug("{} : neighbour {} in cluster disappeared".format(self.neighbourhood.myself.DNS, receptedmsg["spec"]["disappeared"]["DNS"]))
-            
+
+
+        
+    def detect(self, receptedmsg):
+        """
+        send detection to parent
+        """
+        if self.neighbourhood.parent!=0:
+            receptedmsg["destination"] = self.neighbourhood.parent.__dict__
+            receptedmsg["source"] = self.neighbourhood.myself.__dict__
+            self.dicqueue.Qtosendunicast.put(receptedmsg)
