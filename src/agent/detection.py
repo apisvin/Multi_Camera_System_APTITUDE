@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import time
 import sys
 import logging
+from agent.output.bboxes_2d import *
 
 
 
@@ -55,12 +56,17 @@ class detection:
         while ret==True and self.stopFlag.is_set()==False:
             
             #capture image
+            ret, frame = cap.read()
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) # Conversion RGB to HSV
             image = cv2.blur(image, (5, 5)) # Blur the image to expand the pixel 
+
+            start = time.time()
             
             #ArUco marker def
             arucoParams = cv2.aruco.DetectorParameters_create() #The ArUco parameters used for detection (unless you have a good reason to modify the parameters, the default parameters returned by cv2.aruco.DetectorParameters_create are typically sufficient)
             (corners, ids, rejected) = cv2.aruco.detectMarkers(frame, arucoDict,parameters=arucoParams)
+
+            end = time.time()
                         
             #corners: A list containing the (x, y)-coordinates of our detected ArUco markers
             #ids : The ArUco IDs of the detected markers
@@ -77,11 +83,19 @@ class detection:
                     # top-left, top-right, bottom-right, and bottom-left order)
                     corners = markerCorner.reshape((4, 2))
                     #(topLeft, topRight, bottomRight, bottomLeft) = corners
+                    #draw detection point on frame
                     i+=1
                     position = (int(corners[0][0]), int(corners[0][1]))
                     positionText = (int(corners[0][0]), int(corners[0][1])-15)
                     cv2.circle(frame, position, 12, (0, 0, 255), -1)
                     cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
+
+                    #create bounding box on frame 
+                    x = min(corners[:,0])
+                    y = min(corners[:,1])
+                    w = max(corners[:,1]) - y
+                    h = max(corners[:,0]) - x
+                    cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 0, 255), 2)
                 
                     point3D = self.calib.project_2D_to_3D(Point2D(int(corners[0][0]), int(corners[0][1])), Z = 0)
 
@@ -120,7 +134,7 @@ class detection:
                 cv2.imshow("frame", frameResized)
             
             cv2.waitKey(self.fps) 
-            ret, frame = cap.read()
+            
                     
             # Break the loop
             if cv2.waitKey(1) & 0xFF == ord('q'):
