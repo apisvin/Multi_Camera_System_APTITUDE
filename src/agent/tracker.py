@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 from collections import deque
-
+import logging
 
 class tracker():
     
@@ -17,7 +17,7 @@ class tracker():
         self.neighbourhood = neighbourhood 
         self.dicqueue = dicqueue
         self.dictracker = {} #dictionnary to manage all trackers
-        self.Qtoplot = Queue()
+        self.Qtoplot = self.dicqueue.Qtoplot
     
     def launch_tracker(self):
         #the role of this function is to distribute the observation to
@@ -31,48 +31,32 @@ class tracker():
         while self.stopFlag.is_set()==False:
             # take msh on the queue
             msg = self.dicqueue.Qtotracker.get()
+            bboxes = msg["spec"]["BBoxes2D"].bboxes
+            classIDs = msg["spec"]["BBoxes2D"].class_IDs
             
-            for detobject in msg["spec"]["objects"]:            
+            for bbox, classID in zip(bboxes, classIDs):            
                 # choose the corresponding tracker (kalman filter)
-                key = self.get_kalman_key(detobject)
+                key = self.get_kalman_key(classID)
                 if key ==-1:
                     # if no corresponding tracker -> launch new tracker
-                    print("new tracker for ", detobject)
                     Qtokalman = Queue()
-                    if detobject["classID"] == "aruco":
-                        newTracker = kalman(self.stopFlag, self.neighbourhood, self.dicqueue, "aruco",detobject["objectID"], self.Qtoplot)
-                        self.dictracker["aruco_"+str(detobject["objectID"])] = {"queue" : Qtokalman, "tracker" : newTracker}
-                    else:
-                        newTracker = kalman(self.stopFlag, self.neighbourhood, self.dicqueue, detobject["classID"], obj_counter, self.Qtoplot)
-                        obj_counter+=1
-                        self.dictracker[str(detobject["classID"])+"_"+str(detobject["objectID"])] = {"queue" : Qtokalman, "tracker" : newTracker}
-
+                    newTracker = kalman(self.stopFlag, self.neighbourhood, self.dicqueue, "aruco",classID, self.Qtoplot)
+                    self.dictracker["aruco_"+str(classID)] = {"queue" : Qtokalman, "tracker" : newTracker}
+                    
                     threading.Thread(target=newTracker.launch_kalman, args=(Qtokalman,)).start()
-                    Qtokalman.put(detobject)
+                    Qtokalman.put([bbox[0], bbox[1]])
                 else:
                     Qtokalman = self.dictracker[key]["queue"]
-                    Qtokalman.put(detobject)
+                    Qtokalman.put([bbox[0], bbox[1]])
+                    logging.debug("position tracker : {}".format([bbox[0], bbox[1]]))
     
     # return the tracker if the observation is close (<1m)
-    def get_kalman_key(self, detobject):
-        if detobject["classID"] == "aruco":
+    def get_kalman_key(self, classID):
             #check if this identifier is in dictionnary of kalman
-            if "aruco_"+str(detobject["objectID"]) in self.dictracker:
-                return "aruco_"+str(detobject["objectID"])
-            else:
-                return -1
-        else:   
-            observation = np.array([detobject["position"]["x"], detobject["position"]["y"]])
-            #check for color and position
-            for key in self.dictracker:
-                k = self.dictracker[key]["tracker"] #get kalman to extract position
-                #same classID (same color)
-                if k.classID == detobject["classID"]:
-                    position = np.array([k.state[0], k.state[1]]) #extract position
-                    #if the position of the kalman is near (1m) (and same color)
-                    if(euclidean_distance(observation, position)<100):# and k.kalman_id == detobject["classID"]):
-                       return key
-        return -1
+        if "aruco_"+str(classID) in self.dictracker:
+            return "aruco_"+str(classID)
+        else:
+            return -1
 
     def launch_plot(self):
         list_marker = ['x', 'o', 'v', '^']
@@ -118,24 +102,22 @@ class kalman():
         
         self.dicqueue = dicqueue
     
-        self.KF = KalmanFilter(dim_x=6, dim_z=2)
+        self.KF = KalmanFilter(dim_x=4, dim_z=2)
 
-        self.KF.x = np.array([0., 0., 0., 0., 0., 0.])       # initial state (location, velocity and acceleration)
+        self.KF.x = np.array([0., 0., 0., 0.])       # initial state (location, velocity)
 
-        self.KF.F = np.array([[1.,0., self.dt, 0., self.dt**2, 0.],
-                                [0.,1., 0., self.dt, 0, self.dt**2],
-                                [0.,0., 1., 0., self.dt, 0.],
-                                [0.,0., 0., 1., 0., self.dt],
-                                [0.,0., 0., 0., 1., 0.],
-                                [0.,0., 0., 0., 0., 1.]])       # state transition matrix
+        self.KF.F = np.array([[1.,0., self.dt, 0.],
+                                [0.,1., 0., self.dt],
+                                [0.,0., 1., 0.],
+                                [0.,0., 0., 1.]])       # state transition matrix
 
-        self.KF.H = np.array([[1.,0., 0., 0., 0., 0.],
-                                [0.,1., 0., 0., 0., 0.]])       # Measurement function (only position)
+        self.KF.H = np.array([[1.,0., 0., 0.],
+                                [0.,1., 0., 0.]])       # Measurement function (only position)
         self.KF.P *= 30.                               # covariance matrix (already define as np.eye(dim_x))
         self.KF.R = np.array([[1.,0.],
                                 [0., 1.]])               # state uncertainty
         #self.KF.Q = Q_discrete_white_noise(dim=4, dt=self.dt, var=0.1) # process uncertainty
-        self.KF.Q = np.eye(6)*0.1
+        self.KF.Q = np.eye(4)*0.1
         self.state = self.KF.x
         
         self.statetoplot = deque([[0,0]]*10, maxlen=10)
@@ -143,28 +125,26 @@ class kalman():
     def launch_kalman(self, queuefromtrackers):
         
         while self.stopFlag.is_set()==False:
-            detobject = queuefromtrackers.get()
+            position = queuefromtrackers.get()
                 
             # Prediction step
             self.KF.predict()
             camera = []
             reception_t = time.time()
-            x = detobject["position"]["x"]
-            y = detobject["position"]["y"]
+            x = position[0]
+            y = position[1]
             if(self.t == 0): #first observation
-                self.KF.x = np.array([x, y, 0, 0, 0, 0]) # initial state (location, velocity and acceleration)
+                self.KF.x = np.array([x, y, 0, 0]) # initial state (location, velocity and acceleration)
             if(self.t != 0):
                 reception_t = time.time() 
                 self.dt = reception_t - self.t
-                self.KF.F = np.array([[1.,0., self.dt, 0., self.dt**2, 0.],
-                            [0.,1., 0., self.dt, 0, self.dt**2],
-                            [0.,0., 1., 0., self.dt, 0.],
-                            [0.,0., 0., 1., 0., self.dt],
-                            [0.,0., 0., 0., 1., 0.],
-                            [0.,0., 0., 0., 0., 1.]])          # update state transition matrix
+                self.KF.F = np.array([[1.,0., self.dt, 0.],
+                            [0.,1., 0., self.dt],
+                            [0.,0., 1., 0.],
+                            [0.,0., 0., 1.]])          # update state transition matrix
                 #G = np.array([0.5*self.dt**2, 0.5*self.dt**2, self.dt, self.dt]).T
                 #self.KF.Q = G * G.T * 1
-                self.KF.Q = np.eye(6)*self.dt
+                self.KF.Q = np.eye(4)*self.dt
                 obs = np.array([x, y])
                 self.KF.update(obs)
             self.t = reception_t
@@ -189,19 +169,6 @@ class kalman():
                        "spec" : {"numbersObjects" : 1,
                                  "objects" : [detobject]}}
                 self.dicqueue["Qtoidentification"].put(msg)
-            
-            #Projet commun avec Xavier Claude
-            #Si il y a un agent "car" dans mon neighbourhood,
-            #je lui envoie mon output
-            dict_car = self.neighbourhood.get_car()
-            if(dict_car!=-1):
-                msg = {"source" : self.neighbourhood.myself.__dict__,
-                       "destination" : dict_car,
-                       "method" : "car",
-                       "spec" : {"x" : self.state[0],
-                            "y" : self.state[1],
-                            "z" : constants.ZPLAN}}
-                self.dicqueue["Qtosendunicast"].put(msg)
             """
         
     

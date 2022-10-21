@@ -32,8 +32,7 @@ class BBoxes2D():
             bboxes_format (str): Either "xt_yt_w_h" (default) or "x1_y1_x2_y2"
                 depending on the format of 'bboxes'.
         """
-        number_objects = 0 if bboxes is None else len(bboxes)
-        super().__init__(number_objects=number_objects)
+        self.number_objects = 0 if bboxes is None else len(bboxes)
 
         self.detection_time = detection_time
 

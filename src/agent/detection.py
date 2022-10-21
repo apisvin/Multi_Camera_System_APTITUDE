@@ -52,7 +52,6 @@ class detection:
         time.sleep(0.001)
         ret, frame = cap.read()
         arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)    #The ArUco dictionary we are using. 50 unique aruco with 4x4 pixels
-        logging.debug("launch detection")
         while ret==True and self.stopFlag.is_set()==False:
             
             #capture image
@@ -65,14 +64,14 @@ class detection:
             #ArUco marker def
             arucoParams = cv2.aruco.DetectorParameters_create() #The ArUco parameters used for detection (unless you have a good reason to modify the parameters, the default parameters returned by cv2.aruco.DetectorParameters_create are typically sufficient)
             (corners, ids, rejected) = cv2.aruco.detectMarkers(frame, arucoDict,parameters=arucoParams)
-
-            end = time.time()
                         
             #corners: A list containing the (x, y)-coordinates of our detected ArUco markers
             #ids : The ArUco IDs of the detected markers
             
             #buffer to keep all objects 
             objects = []
+            bboxes = []
+            classIDs = []
             i=0
             
             #ArUco detection
@@ -81,23 +80,51 @@ class detection:
                 for (markerCorner, markerID) in zip(corners, ids):
                     # extract the marker corners (which are always returned in
                     # top-left, top-right, bottom-right, and bottom-left order)
-                    corners = markerCorner.reshape((4, 2))
+                    corners2D = markerCorner.reshape((4, 2))
                     #(topLeft, topRight, bottomRight, bottomLeft) = corners
-                    #draw detection point on frame
+                    x3D = []
+                    y3D = []
+                    for corner2D in corners2D:
+                        corner3D = self.calib.project_2D_to_3D(Point2D(int(corner2D[0]), int(corner2D[1])), Z = 0)
+                        x3D.append(corner3D.x)
+                        y3D.append(corner3D.y)
+
+                    """
+                    topLeft3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[0][0]), int(corners2D[0][1])), Z = 0)
+                    topRight3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[1][0]), int(corners2D[1][1])), Z = 0)
+                    bottomLeft3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[2][0]), int(corners2D[2][1])), Z = 0)
+                    bottomRight3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[3][0]), int(corners2D[3][1])), Z = 0)
+                    """
+                    #create bounding box on 3D frame 
+                    x = int(min(x3D))
+                    y = int(min(y3D))
+                    w = int(max(y3D) - y)
+                    h = int(max(x3D) - x)
+                    #draw bouning box on 2D frame
+                    pt1 = self.calib.project_3D_to_2D(Point3D(x, y, 0))
+                    pt1 = [int(pt1.x), int(pt1.y)]
+                    pt2 = self.calib.project_3D_to_2D(Point3D(x+w, y, 0))
+                    pt2 = [int(pt2.x), int(pt2.y)]
+                    pt3 = self.calib.project_3D_to_2D(Point3D(x+w, y+h, 0))
+                    pt3 = [int(pt3.x), int(pt3.y)]
+                    pt4 = self.calib.project_3D_to_2D(Point3D(x, y+h, 0))
+                    pt4 = [int(pt4.x), int(pt4.y)]
+                    pts = np.array([pt1,pt2,pt3,pt4], np.int32)
+                    pts = pts.reshape((-1, 1, 2))
+                    cv2.polylines(frame, [pts], True, (0, 0, 255), 2)
+                    #draw detection point on 2D frame
                     i+=1
-                    position = (int(corners[0][0]), int(corners[0][1]))
-                    positionText = (int(corners[0][0]), int(corners[0][1])-15)
+                    position = (int(corners2D[0][0]), int(corners2D[0][1]))
+                    positionText = (int(corners2D[0][0]), int(corners2D[0][1])-15)
                     cv2.circle(frame, position, 12, (0, 0, 255), -1)
                     cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
 
-                    #create bounding box on frame 
-                    x = min(corners[:,0])
-                    y = min(corners[:,1])
-                    w = max(corners[:,1]) - y
-                    h = max(corners[:,0]) - x
-                    cv2.rectangle(frame, (x,y), (x+w, y+h), (0, 0, 255), 2)
+                    #project bbox on the ground
+                    point3D = self.calib.project_2D_to_3D(Point2D(x, y), Z = 0)
+                    bboxes.append([x,y,w,h])
+                    classIDs.append(markerID)
                 
-                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners[0][0]), int(corners[0][1])), Z = 0)
+                    
 
                     # dictionnary for detected object
                     objectID = int(markerID)
@@ -121,12 +148,13 @@ class detection:
             
             
             if(len(objects)>0):
+                end = time.time()
+                BBoxes = BBoxes2D(end-start, np.array(bboxes), np.array(classIDs), np.ones(len(bboxes)), frame.shape[1], frame.shape[0])
                 # dictionnary for msg to send
                 msg = {"source" : "",
                        "destination" : "",
                        "method" : "detect",
-                       "spec" : {"numbersObjects" : len(objects),
-                                 "objects" : objects}}
+                       "spec" : {"BBoxes2D" : BBoxes}}
                 self.dicqueue.Qtoidentification.put(msg)
             ####################################################
             if self.display:

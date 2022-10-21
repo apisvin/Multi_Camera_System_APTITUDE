@@ -208,5 +208,12 @@ class hardware_manager:
             return self.launchers[hardwareID].dicqueue
         except:
             return -1
+        
+    def get_tracker(self):
+        for l in self.launchers.values():
+            if l.n.myself.agenttype=="tracking":
+                return l
+        return -1
+        
     
 
