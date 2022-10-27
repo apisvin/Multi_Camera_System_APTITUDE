@@ -16,3 +16,5 @@ class dicqueue:
         self.Qtotracker =             Queue()
         self.Qfromtrackers =        Queue()
         self.Qtoplot =              Queue()
+        self.QtoVIVE =              Queue()
+        self.Qtoeval =              Queue()
