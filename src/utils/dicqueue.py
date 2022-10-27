@@ -13,6 +13,7 @@ class dicqueue:
         self.QtoHardwareManager =   QtoHardwareManager
         self.Qtoidentification =    Queue()
         self.Qtowatcher =           Queue()
-        self.Qtotracker =             Queue()
+        self.Qtotracker =           Queue()
         self.Qfromtrackers =        Queue()
         self.Qtoplot =              Queue()
+        self.Qtobenchmark =         Queue()
