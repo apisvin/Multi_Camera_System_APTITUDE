@@ -38,20 +38,27 @@ class tracker():
                 # take msh on the queue
                 try:
                     msg = self.dicqueue.Qtotracker.get(timeout=1)
+                    """
                     bboxes = msg["spec"]["BBoxes2D"]["bboxes"]
                     classIDs = msg["spec"]["BBoxes2D"]["class_IDs"]
-                    
-                    
-                    for bbox, classID in zip(bboxes, classIDs):            
+                    """
+                    objects = msg["spec"]["objects"]
+                                        
+                    #for bbox, classID in zip(bboxes, classIDs):
+                    for detobject in objects:
                         # choose the corresponding tracker (kalman filter)
+                        classID = detobject["objectID"]
+                        position = detobject["position"]
+                        px = position["x"]
+                        py = position["y"]
                         key = self.get_kalman_key(classID)
                         if key ==-1:
                             # if no corresponding tracker -> launch new tracker
                             newTracker = kalman("aruco",classID)
                             self.dictracker["aruco_"+str(classID)] = newTracker
-                            [x, y, ID] = newTracker.process_kalman([bbox[0], bbox[1]])
+                            [x, y, ID] = newTracker.process_kalman([px, py])
                         else:
-                            [x, y, ID] = self.dictracker["aruco_"+str(classID)].process_kalman([bbox[0], bbox[1]])
+                            [x, y, ID] = self.dictracker["aruco_"+str(classID)].process_kalman([px, py])
                         
                         if self.display:
                             self.Qtoplot.put([x, y, ID])

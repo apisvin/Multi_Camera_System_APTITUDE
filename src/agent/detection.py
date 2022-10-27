@@ -120,13 +120,13 @@ class detection:
                     cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
 
                     #project bbox on the ground
-                    point3D = self.calib.project_2D_to_3D(Point2D(x, y), Z = 0)
                     bboxes.append([x,y,w,h])
                     classIDs.append(markerID)
                 
                     
 
                     # dictionnary for detected object
+                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[0][0]), int(corners2D[0][1])), Z = 0)
                     objectID = int(markerID)
                     classID = "aruco"
                     position = {"x" : float(point3D.x),
@@ -149,12 +149,17 @@ class detection:
             
             if(len(objects)>0):
                 end = time.time()
+                """
                 BBoxes = BBoxes2D(end-start, np.array(bboxes), np.array(classIDs), np.ones(len(bboxes)), frame.shape[1], frame.shape[0])
                 # dictionnary for msg to send
                 msg = {"source" : "",
                        "destination" : "",
                        "method" : "detect",
-                       "spec" : {"BBoxes2D" : BBoxes}}
+                       "spec" : {"BBoxes2D" : BBoxes}}"""
+                msg = {"source" : "",
+                       "destination" : "",
+                       "method" : "detect",
+                       "spec" : {"objects" : objects}}
                 self.dicqueue.Qtoidentification.put(msg)
             ####################################################
             if self.display:
