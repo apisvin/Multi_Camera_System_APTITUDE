@@ -24,7 +24,7 @@ hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendb
 # Parameters of Benchmark
 Master = True
 BenchType = "bench1"
-time = 30
+waitTitiemme = 30
 
 def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):
     r = receiver(hardware_manager)    
@@ -44,15 +44,15 @@ def main():
 
     if Master:
         lt = launcher('tracking', 1, 'T', Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)
-        ld = launcher('detection', 1, Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+        ld = launcher('detection', 0, "", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
 
         hardware_manager.add(lt)
         threading.Thread(target=lt.launch, args=()).start()
         hardware_manager.add(ld)
         threading.Thread(target=ld.launch, args=()).start()
 
-        msg = {"source" : "benchmarck",
-                "destination" : "hardware_manager",
+        msg = {"source" : lt.n.myself.__dict__,
+                "destination" : "all_agent",
                 "method" : "benchmark",
                 "spec" :BenchType}
         Qtosendbroadcast.put(msg)
@@ -79,16 +79,20 @@ def main():
             ld = launcher('detection', 1, Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
             hardware_manager.add(ld)
             threading.Thread(target=ld.launch, args=()).start()
-            time.sleep(time)
+            time.sleep(waitTime)
             msg = {"source" : "benchmarck",
                     "destination" : "hardware_manager",
                     "method" : "remove",
                     "spec" : {"hardwareID" : ld.n.myself.hardwareID}}
             hardware_manager.QtoHardwareManager.put(msg)
         elif(msg["spec"]=="bench3"):
-            time.sleep(time)
+            time.sleep(waitTime)
             l = launcher(agenttype=agenttype, level=level, DNS=DNS, Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast, QtoHardwareManager=hardware_manager.QtoHardwareManager)
             hardware_manager.add(l)
             threading.Thread(target=l.launch, args=()).start()
+    while True:
+        time.sleep(10)
         
 
+if __name__ == "__main__":
+    main()
