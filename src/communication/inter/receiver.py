@@ -67,11 +67,11 @@ class receiver():
             if(self.local_ip != address[0]): #message not from me
                 dictReceived = json.loads(msgReceived)
                 #special case when msg is not from an agent but from GroundTruth
-                if(dictReceived["source"]=="GroundTruth"):
+                if(dictReceived["source"]=="VIVE"):
                     #get tracker in hardware if there is one
-                    launcher_tracker = self.hardware_manager.get_tracker()
-                    if launcher_tracker!=-1:
-                        put_on_queue(dictReceived, launcher_tracker.dicqueue)
+                    launcher_evaluate = self.hardware_manager.get_evaluate()
+                    if launcher_evaluate!=-1:
+                        put_on_queue(dictReceived, launcher_evaluate.dicqueue)
                 else:
                     #chercher la bonne dicqueue dans manager_hardware
                     dicqueue = self.hardware_manager.get_dicqueue(dictReceived["destination"]["hardwareID"])
@@ -122,6 +122,9 @@ def put_on_queue(dictReceived, dicqueue):
         
     if(dictReceived["method"] == "detect"):
         dicqueue.Qtotracker.put(dictReceived)
+        
+    if(dictReceived["method"] == "track"):
+        dicqueue.Qtoeval.put(dictReceived)
 
     if(dictReceived["method"] == "request_creation"):
         dicqueue.QtoHardwareManager.put(dictReceived)
@@ -133,6 +136,5 @@ def put_on_queue(dictReceived, dicqueue):
         dicqueue.QtoHardwareManager.put(dictReceived)
         
     if(dictReceived["method"] == "GroundTruth"):
-        logging.debug("msg received : {}".format(dictReceived))
-        dicqueue.Qtoplot.put((dictReceived["spec"][0], dictReceived["spec"][1], "VIVE"))
+        dicqueue.Qtoeval.put(dictReceived)
 

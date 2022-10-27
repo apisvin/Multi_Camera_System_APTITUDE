@@ -85,7 +85,7 @@ class detection:
                     x3D = []
                     y3D = []
                     for corner2D in corners2D:
-                        corner3D = self.calib.project_2D_to_3D(Point2D(int(corner2D[0]), int(corner2D[1])), Z = 0)
+                        corner3D = self.calib.project_2D_to_3D(Point2D(int(corner2D[0]), int(corner2D[1])), Z = 8)
                         x3D.append(corner3D.x)
                         y3D.append(corner3D.y)
 

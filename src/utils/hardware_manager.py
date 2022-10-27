@@ -209,9 +209,9 @@ class hardware_manager:
         except:
             return -1
         
-    def get_tracker(self):
+    def get_evaluate(self):
         for l in self.launchers.values():
-            if l.n.myself.agenttype=="tracking":
+            if l.n.myself.agenttype=="evaluate":
                 return l
         return -1
         

@@ -8,48 +8,69 @@ from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 from collections import deque
 import logging
+import csv
 
 class tracker():
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         self.stopFlag = stopFlag
-        self.display_kalman = True
+        self.display = True
+        self.record = False
         self.neighbourhood = neighbourhood 
         self.dicqueue = dicqueue
         self.dictracker = {} #dictionnary to manage all trackers
-        self.Qtoplot = self.dicqueue.Qtoplot
+        self.Qtoplot = self.dicqueue.Qtoplot if self.display else 0
     
     def launch_tracker(self):
         #the role of this function is to distribute the observation to
         #the corresponding kalman filter. If there is none, it creates
         #a kalman filter
-        #kalman_id = 0
-        if(self.display_kalman):
+        df = 0
+        if(self.display):
             threading.Thread(target=self.launch_plot, args=()).start()
-
         obj_counter = 0
-        while self.stopFlag.is_set()==False:
-            # take msh on the queue
-            msg = self.dicqueue.Qtotracker.get()
-            bboxes = msg["spec"]["BBoxes2D"].bboxes
-            classIDs = msg["spec"]["BBoxes2D"].class_IDs
-            
-            for bbox, classID in zip(bboxes, classIDs):            
-                # choose the corresponding tracker (kalman filter)
-                key = self.get_kalman_key(classID)
-                if key ==-1:
-                    # if no corresponding tracker -> launch new tracker
-                    Qtokalman = Queue()
-                    newTracker = kalman(self.stopFlag, self.neighbourhood, self.dicqueue, "aruco",classID, self.Qtoplot)
-                    self.dictracker["aruco_"+str(classID)] = {"queue" : Qtokalman, "tracker" : newTracker}
+        with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/tracker.csv", "w", newline="") as df:
+            if(self.record):
+                header = ["x", "y", "time"]
+                writer = csv.DictWriter(df, fieldnames=header)
+                writer.writeheader()
+            while self.stopFlag.is_set()==False:
+                # take msh on the queue
+                try:
+                    msg = self.dicqueue.Qtotracker.get(timeout=1)
+                    bboxes = msg["spec"]["BBoxes2D"].bboxes
+                    classIDs = msg["spec"]["BBoxes2D"].class_IDs
                     
-                    threading.Thread(target=newTracker.launch_kalman, args=(Qtokalman,)).start()
-                    Qtokalman.put([bbox[0], bbox[1]])
-                else:
-                    Qtokalman = self.dictracker[key]["queue"]
-                    Qtokalman.put([bbox[0], bbox[1]])
-                    logging.debug("position tracker : {}".format([bbox[0], bbox[1]]))
-    
+                    for bbox, classID in zip(bboxes, classIDs):            
+                        # choose the corresponding tracker (kalman filter)
+                        key = self.get_kalman_key(classID)
+                        if key ==-1:
+                            # if no corresponding tracker -> launch new tracker
+                            newTracker = kalman("aruco",classID)
+                            self.dictracker["aruco_"+str(classID)] = newTracker
+                            [x, y, ID] = newTracker.process_kalman([bbox[0], bbox[1]])
+                        else:
+                            [x, y, ID] = self.dictracker["aruco_"+str(classID)].process_kalman([bbox[0], bbox[1]])
+                        
+                        if self.display:
+                            self.Qtoplot.put([x, y, ID])
+                        if self.record:
+                            writer.writerow({'x' : str(x),
+                                            'y' : str(y),
+                                            'time' : time.time()})
+                        
+                        if self.neighbourhood.parent != 0:
+                            msg = {"source" : self.neighbourhood.myself.__dict__,
+                               "destination" : self.neighbourhood.parent.__dict__,
+                               "method" : "track",
+                               "spec" : {"x" : str(x),
+                                         "y" : str(y),
+                                         "time" : time.time()}}
+                            self.dicqueue.Qtosendunicast.put(msg)
+                except:
+                    pass
+        logging.debug("tracker stopped")
+                        
     # return the tracker if the observation is close (<1m)
     def get_kalman_key(self, classID):
             #check if this identifier is in dictionnary of kalman
@@ -76,7 +97,7 @@ class tracker():
             else:
                 #create new plot and add to dicplot
                 dicplot[str(kalman_id)], = ax.plot(xstate,ystate,list_marker[marker], label="object "+str(kalman_id))
-                #ax.legend()
+                ax.legend()
             fig.canvas.draw()
             fig.canvas.flush_events()
                
@@ -87,20 +108,13 @@ def euclidean_distance(p1, p2):
 
 class kalman():
     
-    def __init__(self, stopFlag, neighbourhood, dicqueue, classID, objectID, Qtoplot):
-        self.stopFlag = stopFlag
+    def __init__(self, classID, objectID):
         self.classID = classID
         self.objectID = objectID
-        
-        self.Qtoplot = Qtoplot
         
         self.t = 0.0 #time to start Kalman
         
         self.dt = 0.0
-        
-        self.neighbourhood = neighbourhood
-        
-        self.dicqueue = dicqueue
     
         self.KF = KalmanFilter(dim_x=4, dim_z=2)
 
@@ -122,54 +136,52 @@ class kalman():
         
         self.statetoplot = deque([[0,0]]*10, maxlen=10)
              
-    def launch_kalman(self, queuefromtrackers):
-        
-        while self.stopFlag.is_set()==False:
-            position = queuefromtrackers.get()
-                
-            # Prediction step
-            self.KF.predict()
-            camera = []
-            reception_t = time.time()
-            x = position[0]
-            y = position[1]
-            if(self.t == 0): #first observation
-                self.KF.x = np.array([x, y, 0, 0]) # initial state (location, velocity and acceleration)
-            if(self.t != 0):
-                reception_t = time.time() 
-                self.dt = reception_t - self.t
-                self.KF.F = np.array([[1.,0., self.dt, 0.],
-                            [0.,1., 0., self.dt],
-                            [0.,0., 1., 0.],
-                            [0.,0., 0., 1.]])          # update state transition matrix
-                #G = np.array([0.5*self.dt**2, 0.5*self.dt**2, self.dt, self.dt]).T
-                #self.KF.Q = G * G.T * 1
-                self.KF.Q = np.eye(4)*self.dt
-                obs = np.array([x, y])
-                self.KF.update(obs)
-            self.t = reception_t
-            self.state = self.KF.x
-            #send the 10 last state to plot
-            self.statetoplot.appendleft([self.state[0], self.state[1]])
-            xstate = [x[0] for x in self.statetoplot]
-            ystate = [x[1] for x in self.statetoplot]
-            if self.Qtoplot != 0:
-                self.Qtoplot.put([self.state[0], self.state[1], str(self.classID)+"_"+str(self.objectID)]) 
-            """
-            # send object msg to upper level
-            if(self.neighbourhood.get_parent() != 0):
-                #if I have a parent, i send my output as a detection
-                detobject["position"] = {"x" : self.state[0],
-                            "y" : self.state[1],
-                            "z" : constants.ZPLAN}
-                # dictionnary for msg to send
-                msg = {"source" : "",
-                       "destination" : "",
-                       "method" : "detect",
-                       "spec" : {"numbersObjects" : 1,
-                                 "objects" : [detobject]}}
-                self.dicqueue["Qtoidentification"].put(msg)
-            """
+    def process_kalman(self, position):
+    
+        # Prediction step
+        self.KF.predict()
+        camera = []
+        reception_t = time.time()
+        x = position[0]
+        y = position[1]
+        if(self.t == 0): #first observation
+            self.KF.x = np.array([x, y, 0, 0]) # initial state (location, velocity and acceleration)
+        if(self.t != 0):
+            reception_t = time.time() 
+            self.dt = reception_t - self.t
+            self.KF.F = np.array([[1.,0., self.dt, 0.],
+                        [0.,1., 0., self.dt],
+                        [0.,0., 1., 0.],
+                        [0.,0., 0., 1.]])          # update state transition matrix
+            #G = np.array([0.5*self.dt**2, 0.5*self.dt**2, self.dt, self.dt]).T
+            #self.KF.Q = G * G.T * 1
+            self.KF.Q = np.eye(4)*self.dt
+            obs = np.array([x, y])
+            self.KF.update(obs)
+        self.t = reception_t
+        self.state = self.KF.x
+        #send the 10 last state to plot
+        #self.statetoplot.appendleft([self.state[0], self.state[1]])
+        #xstate = [x[0] for x in self.statetoplot]
+        #ystate = [x[1] for x in self.statetoplot]
+        return [self.state[0], self.state[1], str(self.classID)+"_"+str(self.objectID)]
+        #if self.Qtoplot != 0:
+        #    self.Qtoplot.put([self.state[0], self.state[1], str(self.classID)+"_"+str(self.objectID)]) 
+        """
+        # send object msg to upper level
+        if(self.neighbourhood.get_parent() != 0):
+            #if I have a parent, i send my output as a detection
+            detobject["position"] = {"x" : self.state[0],
+                        "y" : self.state[1],
+                        "z" : constants.ZPLAN}
+            # dictionnary for msg to send
+            msg = {"source" : "",
+                   "destination" : "",
+                   "method" : "detect",
+                   "spec" : {"numbersObjects" : 1,
+                             "objects" : [detobject]}}
+            self.dicqueue["Qtoidentification"].put(msg)
+        """
         
     
         
