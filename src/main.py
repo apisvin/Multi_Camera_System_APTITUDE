@@ -20,6 +20,7 @@ from GUI.GUI import *
 import logging
 # level : DEBUG < INFO < WARNING < ERROR < CRITICAL
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
 hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)

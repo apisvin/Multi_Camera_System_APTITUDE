@@ -38,8 +38,9 @@ class tracker():
                 # take msh on the queue
                 try:
                     msg = self.dicqueue.Qtotracker.get(timeout=1)
-                    bboxes = msg["spec"]["BBoxes2D"].bboxes
-                    classIDs = msg["spec"]["BBoxes2D"].class_IDs
+                    bboxes = msg["spec"]["BBoxes2D"]["bboxes"]
+                    classIDs = msg["spec"]["BBoxes2D"]["class_IDs"]
+                    
                     
                     for bbox, classID in zip(bboxes, classIDs):            
                         # choose the corresponding tracker (kalman filter)
