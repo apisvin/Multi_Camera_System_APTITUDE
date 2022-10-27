@@ -67,8 +67,13 @@ def main():
         hardware_manager.QtoHardwareManager.put(msgremove)
 
     else:
+<<<<<<< HEAD
         #create balnk agent to wait for benchmark message from master 
         blank = launcher("blank", 0, "blankdns", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+=======
+        #create blank agent to wait for benchmark message from master 
+        blank = launcher('blank', Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+>>>>>>> 63d5191d7efb9a75dc28520bc7b9d8b254ef6d8f
         hardware_manager.add(blank)
         threading.Thread(target=blank.launch, args=()).start()
         #wait for message
@@ -81,7 +86,11 @@ def main():
                 "destination" : "hardware_manager",
                 "method" : "remove",
                 "spec" : {"hardwareID" : blank.n.myself.hardwareID}}
+<<<<<<< HEAD
         hardware_manager.QtoHardwareManager.put(msgremove)
+=======
+        hardware_manager.QtoHardwareManager.put(msg)       
+>>>>>>> 63d5191d7efb9a75dc28520bc7b9d8b254ef6d8f
         #start creating agent 
         if(msg["spec"]=="bench1"):
             logging.debug("begin bench1")

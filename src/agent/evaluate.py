@@ -14,10 +14,10 @@ class evaluate():
         self.dicqueue = dicqueue
 
     def launch(self):
-        gt_pos, gt_t, pred_pos, pred_t = [],[],[],[]
-        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/tracker.csv", "w", newline="") as dftracker:
-            with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/vive.csv", "w", newline="") as dfvive:
-                header = ["x", "y", "time"]
+        gt_pos, gt_t, gt_ids, pred_pos, pred_t, pred_ids = [],[],[],[],[],[]
+        with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/tracker.csv", "w", newline="") as dftracker:
+            with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/vive.csv", "w", newline="") as dfvive:
+                header = ["x", "y", "time", "id"]
                 wrt_tracker = csv.DictWriter(dftracker, fieldnames=header)
                 wrt_tracker.writeheader()
                 wrt_vive = csv.DictWriter(dfvive, fieldnames=header)
@@ -26,14 +26,16 @@ class evaluate():
                     try:
                         msg = self.dicqueue.Qtoeval.get(timeout=1)
                         if msg["method"] == "track":
-                            pred_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
-                            pred_t.append(float(msg["spec"]["time"]))
+                            pred_pos.append([msg["spec"]["x"],msg["spec"]["y"]])
+                            pred_t.append(msg["spec"]["time"])
+                            pred_ids.append(msg["spec"]["id"])
                             #wrt_tracker.writerow({'x' : msg["spec"]["x"],
                             #                        'y' : msg["spec"]["y"],
                             #                        'time' : msg["spec"]["time"]})
                         elif msg["method"] == "GroundTruth":
                             gt_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
                             gt_t.append(time.time())
+                            gt_ids.append(msg["spec"]["id"])
                     except:
                         pass
         compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
@@ -71,7 +73,25 @@ def compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = False):
         plt.plot(number_sample, MSEs)
         plt.xlabel('Number of recorded data')
         plt.ylabel('MSE')
-        plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/fig.png")
+        plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/local_data/fig.png")
         plt.show()
 
     return MSEs
+
+def MSE_at_position(pred_pos, pred_t, MSEs):
+    """
+    INPUT   : positions evaluate by cameras & MSE score
+    OUTPUT  : cmap of position with variation of MSE
+    """
+    list_marker = ['x', 'o', 'd', '^', 's', 'P', 'H']
+    fig = plt.figure()
+    plt.axis([-250, 250, -250, 250])
+
+    cm = plt.cm.get_cmap('jet')
+
+    plt.scatter(x = pred_pos[0], y = pred_pos[1], c = MSEs, marker = 'x', cmap = cm)  
+    
+    plt.colorbar(label="MSE", orientation="vertical") 
+    plt.legend()
+    plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/local_data/cmap_position_MSE.png")
+    plt.show()
