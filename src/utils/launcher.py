@@ -61,7 +61,7 @@ class launcher:
 
     def launch_detection(self):
         #calibration
-        image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/src/local_data/image_calibration.png')
+        image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/local_data/image_calibration.png')
 
         aruco_3D = np.array([[0.,0.,0.],
                             [100.,0.,0.],

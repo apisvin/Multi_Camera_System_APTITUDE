@@ -15,6 +15,11 @@ from utils.launcher import *
 from utils.neighbour import *
 from utils.neighbourhood import *
 from utils.hardware_manager import *
+
+import logging
+# level : DEBUG < INFO < WARNING < ERROR < CRITICAL
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
  
 stopFlag = threading.Event() 
 
@@ -22,9 +27,9 @@ Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
 hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)
 
 # Parameters of Benchmark
-Master = True
+Master = False
 BenchType = "bench1"
-waitTitiemme = 30
+waitTime = 20
 
 def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):
     r = receiver(hardware_manager)    
@@ -43,36 +48,48 @@ def main():
     launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast)
 
     if Master:
-        lt = launcher('tracking', 1, 'T', Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)
-        ld = launcher('detection', 0, "", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+        le = launcher("evaluate", 2, "eval", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+        hardware_manager.add(le)
+        threading.Thread(target=le.launch, args=()).start()
 
-        hardware_manager.add(lt)
-        threading.Thread(target=lt.launch, args=()).start()
-        hardware_manager.add(ld)
-        threading.Thread(target=ld.launch, args=()).start()
-
-        msg = {"source" : lt.n.myself.__dict__,
+        msg = {"source" : le.n.myself.__dict__,
                 "destination" : "all_agent",
                 "method" : "benchmark",
                 "spec" :BenchType}
         Qtosendbroadcast.put(msg)
+        #wait
+        time.sleep(waitTime)
+        #remove evaluate 
+        msgremove = {"source" : "benchmarck",
+                "destination" : "hardware_manager",
+                "method" : "remove",
+                "spec" : {"hardwareID" : le.n.myself.hardwareID}}
+        hardware_manager.QtoHardwareManager.put(msgremove)
 
     else:
         #create balnk agent to wait for benchmark message from master 
-        blank = launcher('blank', Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+        blank = launcher("blank", 0, "blankdns", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
         hardware_manager.add(blank)
         threading.Thread(target=blank.launch, args=()).start()
-        #wait for message 
+        #wait for message
+        logging.debug("waiting to begin benchmark")
         msg = blank.dicqueue.Qtobenchmark.get()
+        while msg["method"]!="benchmark":
+            msg = blank.dicqueue.Qtobenchmark.get()
         #remove blank agent from hardware
-        msg = {"source" : "benchmarck",
+        msgremove = {"source" : "benchmarck",
                 "destination" : "hardware_manager",
                 "method" : "remove",
                 "spec" : {"hardwareID" : blank.n.myself.hardwareID}}
-        hardware_manager.QtoHardwareManager.put(msg)
+        hardware_manager.QtoHardwareManager.put(msgremove)
         #start creating agent 
         if(msg["spec"]=="bench1"):
-            ld = launcher('detection', 1, Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
+            logging.debug("begin bench1")
+            lt = launcher('tracking', 1, "", Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)
+            hardware_manager.add(lt)
+            threading.Thread(target=lt.launch, args=()).start()
+            
+            ld = launcher('detection', 0, "", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
             hardware_manager.add(ld)
             threading.Thread(target=ld.launch, args=()).start()
         elif(msg["spec"]=="bench2"):

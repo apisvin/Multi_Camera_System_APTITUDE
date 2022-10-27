@@ -15,8 +15,8 @@ class evaluate():
 
     def launch(self):
         gt_pos, gt_t, pred_pos, pred_t = [],[],[],[]
-        with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/tracker.csv", "w", newline="") as dftracker:
-            with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/vive.csv", "w", newline="") as dfvive:
+        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/tracker.csv", "w", newline="") as dftracker:
+            with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/vive.csv", "w", newline="") as dfvive:
                 header = ["x", "y", "time"]
                 wrt_tracker = csv.DictWriter(dftracker, fieldnames=header)
                 wrt_tracker.writeheader()
@@ -26,8 +26,8 @@ class evaluate():
                     try:
                         msg = self.dicqueue.Qtoeval.get(timeout=1)
                         if msg["method"] == "track":
-                            pred_pos.append([msg["spec"]["x"],msg["spec"]["y"]])
-                            pred_t.append(msg["spec"]["time"])
+                            pred_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
+                            pred_t.append(float(msg["spec"]["time"]))
                             #wrt_tracker.writerow({'x' : msg["spec"]["x"],
                             #                        'y' : msg["spec"]["y"],
                             #                        'time' : msg["spec"]["time"]})
@@ -36,8 +36,6 @@ class evaluate():
                             gt_t.append(time.time())
                     except:
                         pass
-        logging.debug("gt_pos = {}".format(gt_pos))
-        logging.debug("gt_t = {}".format(gt_t))
         compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
         logging.debug("evaluate stopped")
         

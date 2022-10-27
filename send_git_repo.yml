@@ -6,5 +6,5 @@
 
   - name: Synchronization using rsync protocol (push)
     ansible.posix.synchronize:
-      src: /home/pi/Multi_Camera_System_APTITUDE/
-      dest: /home/pi/Multi_Camera_System_APTITUDE
+      src: /home/pi/Multi_Camera_System_APTITUDE/src/
+      dest: /home/pi/Multi_Camera_System_APTITUDE/src

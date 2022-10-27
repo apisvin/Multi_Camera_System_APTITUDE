@@ -137,4 +137,7 @@ def put_on_queue(dictReceived, dicqueue):
         
     if(dictReceived["method"] == "GroundTruth"):
         dicqueue.Qtoeval.put(dictReceived)
+        
+    if(dictReceived["method"] == "benchmark"):
+        dicqueue.Qtobenchmark.put(dictReceived)
 

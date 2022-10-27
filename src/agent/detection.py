@@ -95,6 +95,7 @@ class detection:
                     bottomLeft3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[2][0]), int(corners2D[2][1])), Z = 0)
                     bottomRight3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[3][0]), int(corners2D[3][1])), Z = 0)
                     """
+                    """
                     #create bounding box on 3D frame 
                     x = int(min(x3D))
                     y = int(min(y3D))
@@ -112,16 +113,16 @@ class detection:
                     pts = np.array([pt1,pt2,pt3,pt4], np.int32)
                     pts = pts.reshape((-1, 1, 2))
                     cv2.polylines(frame, [pts], True, (0, 0, 255), 2)
+                    #project bbox on the ground
+                    bboxes.append([x,y,w,h])
+                    classIDs.append(markerID)
+                    """
                     #draw detection point on 2D frame
                     i+=1
                     position = (int(corners2D[0][0]), int(corners2D[0][1]))
                     positionText = (int(corners2D[0][0]), int(corners2D[0][1])-15)
                     cv2.circle(frame, position, 12, (0, 0, 255), -1)
                     cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
-
-                    #project bbox on the ground
-                    bboxes.append([x,y,w,h])
-                    classIDs.append(markerID)
                 
                     
 

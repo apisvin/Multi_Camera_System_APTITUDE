@@ -15,7 +15,6 @@ class tracker():
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         self.stopFlag = stopFlag
         self.display = True
-        self.record = False
         self.neighbourhood = neighbourhood 
         self.dicqueue = dicqueue
         self.dictracker = {} #dictionnary to manage all trackers
@@ -29,54 +28,46 @@ class tracker():
         if(self.display):
             threading.Thread(target=self.launch_plot, args=()).start()
         obj_counter = 0
-        with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/tracker.csv", "w", newline="") as df:
-            if(self.record):
-                header = ["x", "y", "time"]
-                writer = csv.DictWriter(df, fieldnames=header)
-                writer.writeheader()
-            while self.stopFlag.is_set()==False:
-                # take msh on the queue
-                try:
-                    msg = self.dicqueue.Qtotracker.get(timeout=1)
-                    """
-                    bboxes = msg["spec"]["BBoxes2D"]["bboxes"]
-                    classIDs = msg["spec"]["BBoxes2D"]["class_IDs"]
-                    """
-                    objects = msg["spec"]["objects"]
-                                        
-                    #for bbox, classID in zip(bboxes, classIDs):
-                    for detobject in objects:
-                        # choose the corresponding tracker (kalman filter)
-                        classID = detobject["objectID"]
-                        position = detobject["position"]
-                        px = position["x"]
-                        py = position["y"]
-                        key = self.get_kalman_key(classID)
-                        if key ==-1:
-                            # if no corresponding tracker -> launch new tracker
-                            newTracker = kalman("aruco",classID)
-                            self.dictracker["aruco_"+str(classID)] = newTracker
-                            [x, y, ID] = newTracker.process_kalman([px, py])
-                        else:
-                            [x, y, ID] = self.dictracker["aruco_"+str(classID)].process_kalman([px, py])
-                        
-                        if self.display:
-                            self.Qtoplot.put([x, y, ID])
-                        if self.record:
-                            writer.writerow({'x' : str(x),
-                                            'y' : str(y),
-                                            'time' : time.time()})
-                        
-                        if self.neighbourhood.parent != 0:
-                            msg = {"source" : self.neighbourhood.myself.__dict__,
-                               "destination" : self.neighbourhood.parent.__dict__,
-                               "method" : "track",
-                               "spec" : {"x" : str(x),
-                                         "y" : str(y),
-                                         "time" : time.time()}}
-                            self.dicqueue.Qtosendunicast.put(msg)
-                except:
-                    pass
+        while self.stopFlag.is_set()==False:
+            # take msh on the queue
+            try:
+                msg = self.dicqueue.Qtotracker.get(timeout=1)
+                """
+                bboxes = msg["spec"]["BBoxes2D"]["bboxes"]
+                classIDs = msg["spec"]["BBoxes2D"]["class_IDs"]
+                """
+                objects = msg["spec"]["objects"]
+                                    
+                #for bbox, classID in zip(bboxes, classIDs):
+                for detobject in objects:
+                    # choose the corresponding tracker (kalman filter)
+                    classID = detobject["objectID"]
+                    position = detobject["position"]
+                    px = position["x"]
+                    py = position["y"]
+                    key = self.get_kalman_key(classID)
+                    if key ==-1:
+                        # if no corresponding tracker -> launch new tracker
+                        newTracker = kalman("aruco",classID)
+                        self.dictracker["aruco_"+str(classID)] = newTracker
+                        [x, y, ID] = newTracker.process_kalman([px, py])
+                    else:
+                        [x, y, ID] = self.dictracker["aruco_"+str(classID)].process_kalman([px, py])
+                    
+                    if self.display:
+                        self.Qtoplot.put([x, y, ID])
+                    
+                    if self.neighbourhood.parent != 0:
+                        msg = {"source" : self.neighbourhood.myself.__dict__,
+                           "destination" : self.neighbourhood.parent.__dict__,
+                           "method" : "track",
+                           "spec" : {"x" : str(x),
+                                     "y" : str(y),
+                                     "id" : classID,
+                                     "time" : time.time()}}
+                        self.dicqueue.Qtosendunicast.put(msg)
+            except:
+                pass
         logging.debug("tracker stopped")
                         
     # return the tracker if the observation is close (<1m)
