@@ -103,8 +103,8 @@ class hardware_manager:
             try:
                 received = self.QtoReceiveCreationSupervisor.get(timeout=1)
                 if cost > (received["spec"]["cpu"]+received["spec"]["ram"])/2:
-                    msg_creator_candidate["source"] = receved["destination"]
-                    msg_creator_candidate["destination"] = receved["source"]
+                    msg_creator_candidate["source"] = received["destination"]
+                    msg_creator_candidate["destination"] = received["source"]
                     break
             except:
                 pass

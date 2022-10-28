@@ -15,6 +15,7 @@ from utils.launcher import *
 from utils.neighbour import *
 from utils.neighbourhood import *
 from utils.hardware_manager import *
+from GUI.GUI_benchmark import *
 
 import logging
 # level : DEBUG < INFO < WARNING < ERROR < CRITICAL
@@ -26,10 +27,6 @@ stopFlag = threading.Event()
 Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
 hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)
 
-# Parameters of Benchmark
-Master = False
-BenchType = "bench1"
-waitTime = 20
 
 def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):
     r = receiver(hardware_manager)    
@@ -46,69 +43,9 @@ def launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast):
 def main():
     launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast)
-
-    if Master:
-        le = launcher("evaluate", 2, "eval", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
-        hardware_manager.add(le)
-        threading.Thread(target=le.launch, args=()).start()
-
-        msg = {"source" : le.n.myself.__dict__,
-                "destination" : "all_agent",
-                "method" : "benchmark",
-                "spec" :BenchType}
-        Qtosendbroadcast.put(msg)
-        #wait
-        time.sleep(waitTime)
-        #remove evaluate 
-        msgremove = {"source" : "benchmarck",
-                "destination" : "hardware_manager",
-                "method" : "remove",
-                "spec" : {"hardwareID" : le.n.myself.hardwareID}}
-        hardware_manager.QtoHardwareManager.put(msgremove)
-
-    else:
-        #create balnk agent to wait for benchmark message from master 
-        blank = launcher("blank", 0, "blankdns", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
-        hardware_manager.add(blank)
-        threading.Thread(target=blank.launch, args=()).start()
-        #wait for message
-        logging.debug("waiting to begin benchmark")
-        msg = blank.dicqueue.Qtobenchmark.get()
-        while msg["method"]!="benchmark":
-            msg = blank.dicqueue.Qtobenchmark.get()
-        #remove blank agent from hardware
-        msgremove = {"source" : "benchmarck",
-                "destination" : "hardware_manager",
-                "method" : "remove",
-                "spec" : {"hardwareID" : blank.n.myself.hardwareID}}
-        hardware_manager.QtoHardwareManager.put(msgremove)
-        #start creating agent 
-        if(msg["spec"]=="bench1"):
-            logging.debug("begin bench1")
-            lt = launcher('tracking', 1, "", Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)
-            hardware_manager.add(lt)
-            threading.Thread(target=lt.launch, args=()).start()
-            
-            ld = launcher('detection', 0, "", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
-            hardware_manager.add(ld)
-            threading.Thread(target=ld.launch, args=()).start()
-        elif(msg["spec"]=="bench2"):
-            ld = launcher('detection', 1, Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = QtoHardwareManager)
-            hardware_manager.add(ld)
-            threading.Thread(target=ld.launch, args=()).start()
-            time.sleep(waitTime)
-            msg = {"source" : "benchmarck",
-                    "destination" : "hardware_manager",
-                    "method" : "remove",
-                    "spec" : {"hardwareID" : ld.n.myself.hardwareID}}
-            hardware_manager.QtoHardwareManager.put(msg)
-        elif(msg["spec"]=="bench3"):
-            time.sleep(waitTime)
-            l = launcher(agenttype=agenttype, level=level, DNS=DNS, Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast, QtoHardwareManager=hardware_manager.QtoHardwareManager)
-            hardware_manager.add(l)
-            threading.Thread(target=l.launch, args=()).start()
-    while True:
-        time.sleep(10)
+    
+    app = App(hardware_manager, Qtosendunicast, Qtosendbroadcast)
+    app.mainloop()
         
 
 if __name__ == "__main__":

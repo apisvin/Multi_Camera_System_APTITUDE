@@ -1,0 +1,237 @@
+from tkinter import *
+from tkinter import ttk
+from utils.launcher import *
+import logging
+import time
+
+class App(Tk):
+    def __init__(self, hardware_manager, Qtosendunicast, Qtosendbroadcast):
+        super().__init__()
+
+        self.hardware_manager = hardware_manager
+        self.Qtosendunicast = Qtosendunicast
+        self.Qtosendbroadcast = Qtosendbroadcast
+
+        self.title("Benchmark")
+        self.geometry("500x800")
+        #counter for row 
+        r = 0
+        #############################
+        #Title
+        ttk.Label(self, text="ADD AGENT").grid(row=r, column=0)
+        r+=1
+
+        #DNS 
+        DNS = StringVar()
+
+        DNS_label = ttk.Label(self, text="DNS:")
+        DNS_label.grid(row=r, column=0)
+        r+=1
+
+        DNS_entry = ttk.Entry(self, textvariable=DNS)
+        DNS_entry.grid(row=r, column=0)
+        r+=1
+        DNS_entry.focus()
+        
+        #Agent type
+        type_label = ttk.Label(self, text="Agent type :")
+        type_label.grid(row=r, column=0)
+        r+=1
+        types = ("Detection", "Tracking", "VIVE", "evaluate", "Blank")
+        agenttype = StringVar()
+        for t in types:
+            rb = ttk.Radiobutton(
+                self,
+                text=t,
+                value=t,
+                variable=agenttype
+            )
+            rb.grid(row=r, column=0)
+            r+=1
+        
+        #level
+        level_label = ttk.Label(self, text="Level :")
+        level_label.grid(row=r, column=0)
+        r+=1
+        level = StringVar(value=0)
+        spin_box = ttk.Spinbox(
+            self,
+            from_=0,
+            to=30,
+            textvariable=level,
+            wrap=True)
+        spin_box.grid(row=r, column=0)
+        r+=1
+
+
+        #Button ADD
+        button = ttk.Button(self, text='Add agent',command=lambda : self.add_clicked(DNS_entry.get(), agenttype.get(), level.get()))
+        button.grid(row=r, column=0)
+        r+=1
+        ###################################################
+
+        #Title
+        ttk.Label(self, text="").grid(row=r, column=0)
+        r+=1
+        ttk.Label(self, text="ADD TIME INTERVAL [s]").grid(row=r, column=0)
+        r+=1
+
+        time_var = StringVar()
+
+        time_entry = ttk.Entry(self, textvariable=time_var)
+        time_entry.grid(row=r, column=0)
+        r+=1
+        time_entry.focus()
+
+        #Button TIME
+        button = ttk.Button(self, text='Add time interval',command=lambda : self.add_time(time_var.get()))
+        button.grid(row=r, column=0)
+        r+=1
+
+        ###################################################
+        #Title 
+        ttk.Label(self, text="").grid(row=r, column=0)
+        r+=1
+        ttk.Label(self, text="SELECT AGENT TO REMOVE").grid(row=r, column=0)
+        r+=1
+
+        button = ttk.Button(self, text='Remove agent',command=lambda : self.remove_clicked())
+        button.grid(row=r, column=0)
+        r+=1
+
+
+        ###################################################
+        ttk.Label(self, text="").grid(row=r, column=0)
+        r+=1
+
+        button = ttk.Button(self, text='Save config',command=lambda : self.save_clicked())
+        button.grid(row=r, column=0)
+        r+=1
+
+        ###################################################
+
+        #Listing agents 
+        ttk.Label(self, text="SUMMARY COMMAND").grid(row=0, column=1)
+        self.list_command = Listbox(height=r)
+        self.list_command.grid(row=1, column=1, rowspan=r)
+        self.index = 1
+
+
+        types = ("Master", "Slave")
+        self.Master = StringVar()
+        for t in types:
+            rb = ttk.Radiobutton(
+                self,
+                text=t,
+                value=t,
+                variable=self.Master
+            )
+            rb.grid(row=r, column=1)
+            r+=1
+
+
+
+        button = ttk.Button(self, text='Begin benchmark',command=lambda : self.launch_benchmark())
+        button.grid(row=r, column=1)
+        r+=1
+
+
+        
+
+
+    def add_clicked(self, DNS, agenttype, level):
+        #create lauuncher in hardware manager 
+        l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
+        self.hardware_manager.add(l)
+        self.list_command.insert(END, ("ADD", agenttype, l.n.myself.hardwareID))
+        
+
+
+    def remove_clicked(self):
+        index = self.list_command.curselection()[0]           #get index of selected item in list_command
+        if self.list_command.get(index)[0]!="ADD":
+            logging.warning("please select an agent that exists.")
+        else:
+            removed_type = self.list_command.get(index)[1]
+            removed_hardwareID = self.list_command.get(index)[2]  #extract corresponding hardwareID
+            """msg = {"source" : "GUI",
+                    "destination" : "hardware_manager",
+                    "method" : "remove",
+                    "spec" : {"hardwareID" : removed_hardwareID}}
+            self.hardware_manager.QtoHardwareManager.put(msg)"""
+            #self.list_command.delete(index)                       #delete line
+            self.list_command.insert(END, ("REMOVE", removed_type, removed_hardwareID))
+
+
+        pass
+
+    def add_time(self, interval):
+        if not interval.isdigit():
+            logging.warning("please type an integer for time interval.")
+        else:
+            self.list_command.insert(END, ("INTERVAL", int(interval)))
+
+        
+    def save_clicked(self):
+        #read all command and save in a file
+        with open("../local_data/config.txt") as fd:
+            for index in range(self.list_command.size()):
+                line = self.list_command.get(index)
+                fd.write(line)
+
+    def launch_benchmark(self):
+        #synchronization between hardware
+        if self.Master.get()=="Master":
+            blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = self.Qtosendunicast, Qtosendbroadcast = self.Qtosendbroadcast, QtoHardwareManager = self.hardware_manager.QtoHardwareManager)
+            #self.hardware_manager.add(blank_l)
+            #threading.Thread(target=blank_l.launch, args=()).start()
+            msg = {"source" : blank_l.n.myself.__dict__,
+                    "destination" : "all_agent",
+                    "method" : "benchmark",
+                    "spec" :""}
+            self.Qtosendbroadcast.put(msg)
+            msgremove = {"source" : "benchmarck",
+                    "destination" : "hardware_manager",
+                    "method" : "remove",
+                    "spec" : {"hardwareID" : blank_l.n.myself.hardwareID}}
+            #self.hardware_manager.QtoHardwareManager.put(msgremove)
+        else:
+            #create balnk agent to wait for benchmark message from master 
+            blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = self.Qtosendunicast, Qtosendbroadcast = self.Qtosendbroadcast, QtoHardwareManager = self.hardware_manager.QtoHardwareManager)
+            self.hardware_manager.add(blank_l)
+            threading.Thread(target=blank_l.launch, args=()).start()
+            #wait for message
+            logging.debug("waiting to begin benchmark")
+            msg = blank_l.dicqueue.Qtobenchmark.get()
+            while msg["method"]!="benchmark":
+                msg = blank_l.dicqueue.Qtobenchmark.get()
+            #remove blank agent from hardware
+            msgremove = {"source" : "benchmarck",
+                    "destination" : "hardware_manager",
+                    "method" : "remove",
+                    "spec" : {"hardwareID" : blank_l.n.myself.hardwareID}}
+            self.hardware_manager.QtoHardwareManager.put(msgremove)
+
+        
+        for index in range(self.list_command.size()):
+            line = self.list_command.get(0)
+            print(line)
+            if line[0] == "ADD":
+                #launch agent 
+                hardwareID = line[2]
+                l = self.hardware_manager.get(hardwareID)
+                threading.Thread(target=l.launch, args=()).start()
+            elif line[0] == "INTERVAL":
+                print("wait {} s".format(line[1]))
+                time.sleep(line[1])
+            elif line[0] == "REMOVE":
+                hardwareID = line[2]
+                msg = {"source" : "GUI",
+                    "destination" : "hardware_manager",
+                    "method" : "remove",
+                    "spec" : {"hardwareID" : hardwareID}}
+                self.hardware_manager.QtoHardwareManager.put(msg)
+            self.list_command.delete(0)                       #delete line
+        print("end benchmark")
+
+
