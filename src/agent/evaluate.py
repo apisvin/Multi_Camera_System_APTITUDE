@@ -15,8 +15,8 @@ class evaluate():
 
     def launch(self):
         gt_pos, gt_t, gt_ids, pred_pos, pred_t, pred_ids = [],[],[],[],[],[]
-        with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/tracker.csv", "w", newline="") as dftracker:
-            with open("/home/pi/Multi_Camera_System_APTITUDE/src/local_data/vive.csv", "w", newline="") as dfvive:
+        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/tracker.csv", "w", newline="") as dftracker:
+            with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/vive.csv", "w", newline="") as dfvive:
                 header = ["x", "y", "time", "id"]
                 wrt_tracker = csv.DictWriter(dftracker, fieldnames=header)
                 wrt_tracker.writeheader()
@@ -26,19 +26,20 @@ class evaluate():
                     try:
                         msg = self.dicqueue.Qtoeval.get(timeout=1)
                         if msg["method"] == "track":
-                            pred_pos.append([msg["spec"]["x"],msg["spec"]["y"]])
-                            pred_t.append(msg["spec"]["time"])
-                            pred_ids.append(msg["spec"]["id"])
+                            pred_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
+                            pred_t.append(float(msg["spec"]["time"]))
+                            pred_ids.append(int(msg["spec"]["id"]))
                             #wrt_tracker.writerow({'x' : msg["spec"]["x"],
                             #                        'y' : msg["spec"]["y"],
                             #                        'time' : msg["spec"]["time"]})
                         elif msg["method"] == "GroundTruth":
                             gt_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
                             gt_t.append(time.time())
-                            gt_ids.append(msg["spec"]["id"])
+                            gt_ids.append(int(msg["spec"]["id"]))
                     except:
                         pass
-        compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
+        MSEs = compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
+        MSE_at_position(pred_pos, pred_t, MSEs)
         logging.debug("evaluate stopped")
         
 def interpolate_data(position, time):
