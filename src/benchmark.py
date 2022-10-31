@@ -25,7 +25,7 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 stopFlag = threading.Event() 
 
 Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
-hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)
+hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast, selforganization=False)
 
 
 def launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast):

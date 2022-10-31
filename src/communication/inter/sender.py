@@ -16,6 +16,15 @@ class sender:
     """
     
     def __init__(self,manager_hardware, Qtosendunicast, Qtosendbroadcast):
+        """
+        Class sender is used to send messages to other agents. Sockets are used to communicate between hardware.
+        Only one sender is launched per hardware to avoid to open several channel
+
+        Args : 
+            hardware_manager : the hardware_manager of the hardware
+            Qtosendunicast (Queue) : Queue used to receive messages from other threads that want to communicate with specific IP address
+            Qtosendbroadcast (Queue) : Queue used to receive messages from other threads that want to communicate all IP addesses
+        """
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
         self.manager_hardware = manager_hardware
@@ -37,9 +46,9 @@ class sender:
     
     def send_unicast(self):
         """
-        envoie le message vers l agent de destination
-        le message peut etre soit transmis directment vers un agent herberge sur le meme hardware ou
-        il peut etre envoye a travers la socket vers l adresse ip de destination
+        Send message to specific agent of the destination field.
+        If agent is implemented on the same hardware as source agent. It puts directly the messages on the corresponding queue.
+        Else it uses socket to send message 
         """
         PORT = 8000
         s_unicast = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -62,7 +71,8 @@ class sender:
     
     def send_broadcast(self):
         """
-        envoie le message a tous les agents contenus sur le hardware et sur le reseau en broadcast
+        Send message in broadcast
+        It send to all agents implemented on this hardware and on the socket for broadcast 
         """
         PORT = 8001
         s_broadcast = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

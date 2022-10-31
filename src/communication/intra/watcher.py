@@ -14,7 +14,10 @@ class watcher():
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
-        creation de classe watcher
+        watcher is used to monitor the connection in neighbourhood. The class has three procedures running :
+            send_alive : Send alive message to parent and children in neighbourhood to tell them that this agent is alive
+            receive_alive : Receive alive messages from parent and children. It update the age variable of the source agent in neighbourhood
+            check_age : check the age variable of parent and childrn in neighbourhood every $delay$ seconds. If the age exceeds 3*$delay$ seconds, the agent is supposed dead and removed from neighbourhood.
 
         args:
             stopFlag : flag pour signaler la fin de la tache 
@@ -29,8 +32,7 @@ class watcher():
         
     def receive_alive(self):
         """
-        attend la reception des message ALIVE.
-        Lorsqu un message est recu, il update l age du voisin correspond 
+        Receive alive messages from parent and children. It update the age variable of the source agent in neighbourhood
         """
         while self.stopFlag.is_set()==False:
             try:
@@ -45,7 +47,7 @@ class watcher():
             
     def send_alive(self):
         """
-        envoie le message ALIVE a l ensemble de ses voisins
+        Send alive message to parent and children in neighbourhood to tell them that this agent is alive 
         """
         while self.stopFlag.is_set()==False:
             for child in self.neighbourhood.get_children():
@@ -66,10 +68,7 @@ class watcher():
             
     def check_age(self):
         """
-        verifie pour chaque voisins son age. 
-        Si son age est plus grand que le seuil (3 fois la duree entre message ALIVE)
-        le voisin est concidere comme perdu. Un message quit dont la source est le voisin disparu 
-        est envoye
+        check the age variable of parent and childrn in neighbourhood every $delay$ seconds. If the age exceeds 3*$delay$ seconds, the agent is supposed dead and removed from neighbourhood.
         """
         while self.stopFlag.is_set()==False:
             for child in self.neighbourhood.get_children():

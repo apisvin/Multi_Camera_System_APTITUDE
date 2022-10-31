@@ -7,21 +7,18 @@ import time
 import logging
 
 class identification:
-    """
-    This class is associated to one agent. Its role is to discover and integrate other agent as neighbour 
-    to the class neighbourhood. 
-    """
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
-        stopFlag : a flag to stop the thread running loop_identication
-        neighbourhood : a class containing all neighbours of the agent
-        dicqueue : a class containing all queues to transmits messages between threads 
+        This class is associated to one agent. Its role is to discover and integrate other agent as neighbour to the class neighbourhood.
+
+        Args : 
+            stopFlag : a flag to stop the thread running loop_identication
+            neighbourhood : a class containing all neighbours of the agent
+            dicqueue : a class containing all queues to transmits messages between threads 
         """
         self.stopFlag = stopFlag        #set flag to kill all thread associated to an agent 
-        
         self.dicqueue = dicqueue
-                
         self.neighbourhood = neighbourhood
         
     def loop_identification(self):

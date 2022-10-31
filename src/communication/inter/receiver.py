@@ -6,17 +6,15 @@ UDP_IP = ''
 
 
 class receiver():
-    """
-    la classe receiver permet de traiter les messages entrant dans l hardware.
-    Pour des soucis d efficacite, une seule classe receiver est creee par hardware.
-    Cela permet de ne pas devoir ouvrir plusiers canaux de communication (socket).
-    Afin de conaitre l ensemble des agents herberges sur l hardware, une variable manager_hardware est utilisee.
-    Elle contient l ensemble des agents contenu sur l hardware. Il est possible de les distinguer par un identifier unique : hardware_ID
-    """
     
     def __init__(self, hardware_manager):
         """
-        ouvre le canal de connumication (socket)
+        Class receiver is used to receive messages from other hardware. Sockets are used to communicate between hardware.
+        Only one receiver is launched per hardware to avoid to open several channel
+
+        Args : 
+            hardware_manager : the hardware_manager of the hardware
+            
         """
         self.hardware_manager = hardware_manager
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -33,7 +31,7 @@ class receiver():
         
     def receive_broadcast(self):
         """
-        recoit les messages destines a tous les agents 
+        Listen the opened socket for broadcasted messages.
         """
         PORT = 8001
         #create socket in broadcast
@@ -53,8 +51,7 @@ class receiver():
 
     def receive_unicast(self):
         """
-        recoit les messages destines a l adresse ip du hardware
-        traite le message recu afin de l envoyer vers l agent correspondant 
+        Listen the opened socket for unicasted messages. 
         """
         PORT = 8000
         #create socket in unicast
@@ -83,8 +80,7 @@ class receiver():
 
 def put_on_queue(dictReceived, dicqueue):
     """
-    traite le message recu : en fonction de la method du message, met le message recu sur la bonne queue 
-    afin de l envoyer vers la bonne tache 
+    Process the message and put it on the correct queue of the dicqueue in function of the method field
     """
     if(dictReceived["method"] == "init"):
         #dictReceived["agent"]["ip"]=address[0]
