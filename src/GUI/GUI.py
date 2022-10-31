@@ -5,6 +5,18 @@ import logging
 
 class App(Tk):
     def __init__(self, hardware_manager, Qtosendunicast, Qtosendbroadcast):
+        """
+        This class is used to managed all agents implemented on this hardware.
+        The Graphic User Interface permits to create, observe and remove agents. 
+        The first part of the interface is used to create an agent. We must give its DNS, type and level in the hierarchy.
+        The second part is composed of the list of all agents created on this hardware. Each agent is followed by two fields : member of its cluster and its children (if any).
+        "Refresh DNS" button is pressed to update the information displayed. "Remove" button is pressed to remove the selected agent.
+
+        Args : 
+            hardware_manager : the hardware_manager of the hardware
+            Qtosendunicast (Queue) : a queue used by the unicast sender thread 
+            Qtosendbroadcast (Queue) : a queue used by the broadcast sender thread 
+        """
         super().__init__()
 
         self.hardware_manager = hardware_manager
@@ -79,6 +91,10 @@ class App(Tk):
 
 
     def add_clicked(self, DNS, agenttype, level):
+        """
+        Activated procedure when "Add agent" button is pressed. 
+        Creates a launcher for the agent and add it to the list 
+        """
         #launcher thread
         l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
         self.hardware_manager.add(l)
@@ -93,6 +109,10 @@ class App(Tk):
 
 
     def refresh_clicked(self):
+        """
+        Activated procedure when "Refresh agent" button is pressed.
+        Update the listing of agents on the GUI 
+        """
         self.list_agent.delete(0, self.list_agent.size()-1) #delete all lines 
         for hardwareID, launcher in self.hardware_manager.launchers.items():
             self.list_agent.insert(END, (launcher.n.myself.DNS, hardwareID))
@@ -107,6 +127,10 @@ class App(Tk):
 
 
     def remove_clicked(self):
+        """
+        Activated procedure when "Remove agent" button is pressed.
+        Remove the selected agent on the listing and send the information to the hardware_manager 
+        """
         index = self.list_agent.curselection()[0]           #get index of selected item in list_agent
         removed_hardwareID = self.list_agent.get(index)[1]  #extract corresponding hardwareID
         msg = {"source" : "GUI",

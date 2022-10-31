@@ -6,6 +6,24 @@ import time
 
 class App(Tk):
     def __init__(self, hardware_manager, Qtosendunicast, Qtosendbroadcast):
+        """
+        This class is used to managed all agents implemented on this hardware during a predifined benchmark.
+        The goal is to create a listing of the different actions (create, wait and remove) during the benchmark on this hardware.
+        Specificities of buttons : 
+            Add agent : add the creation of an agent with DNS, type and level specified above.
+            Add time interval : add a delay in te timeline of the benchmark
+            Remove agent : the selected agent is removed 
+            Save config : Save all the command in a file 
+            Load config : Load a saved file with the commands 
+            Begin benchmark : Launch the benchmark. User must choose if the hardware is master or slave. 
+                              If slave, it will waits until master is launched. This necessary to synchronized all benchmark.
+
+        Args : 
+            hardware_manager : the hardware_manager of the hardware
+            Qtosendunicast (Queue) : a queue used by the unicast sender thread 
+            Qtosendbroadcast (Queue) : a queue used by the broadcast sender thread 
+        """
+
         super().__init__()
 
         self.hardware_manager = hardware_manager

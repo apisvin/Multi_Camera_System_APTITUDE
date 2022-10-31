@@ -16,10 +16,11 @@ import time
     
 class hardware_manager:
     
-    def __init__(self, QtoHardwareManager, Qtosendunicast, Qtosendbroadcast):
+    def __init__(self, QtoHardwareManager, Qtosendunicast, Qtosendbroadcast, selforganization = True):
         self.QtoHardwareManager = QtoHardwareManager
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
+        self.selforganization = selforganization
         self.requestCreationRunning = False
         self.QtoReceiveRequestCreation = Queue()
         self.creationSupersivorRunning = False
@@ -41,16 +42,17 @@ class hardware_manager:
                 threading.Thread(target=l.launch, args=()).start()
             elif (msg["method"]=="remove"):
                 self.remove(msg["spec"]["hardwareID"])
-            elif (msg["method"]=="parentDisappeared"):
-                self.parentDisappeared(msg)
-            elif (msg["method"]=="childDisappeared"):
-                self.childDisappeared(msg)
-            elif (msg["method"]=="request_creation"):
-                self.QtoReceiveRequestCreation.put(msg)
-            elif (msg["method"]=="get_stat"):
-                self.get_stat(msg)
-            elif (msg["method"]=="answer_stat"):
-                self.QtoReceiveCreationSupervisor.put(msg)
+            if self.selforganization:
+                if (msg["method"]=="parentDisappeared"):
+                    self.parentDisappeared(msg)
+                elif (msg["method"]=="childDisappeared"):
+                    self.childDisappeared(msg)
+                elif (msg["method"]=="request_creation"):
+                    self.QtoReceiveRequestCreation.put(msg)
+                elif (msg["method"]=="get_stat"):
+                    self.get_stat(msg)
+                elif (msg["method"]=="answer_stat"):
+                    self.QtoReceiveCreationSupervisor.put(msg)
 
 
     #thread
