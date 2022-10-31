@@ -134,8 +134,8 @@ class App(Tk):
 
         #Listing agents 
         ttk.Label(self, text="SUMMARY COMMAND").grid(row=0, column=1)
-        self.list_command = Listbox(height=r)
-        self.list_command.grid(row=1, column=1, rowspan=r)
+        self.list_command = Listbox(height=r, width=40)
+        self.list_command.grid(row=1, column=1, rowspan=r, columnspan=2)
         self.index = 1
 
 

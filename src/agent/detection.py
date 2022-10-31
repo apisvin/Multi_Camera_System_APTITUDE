@@ -46,7 +46,7 @@ class detection:
         
         cv2.namedWindow("frame", cv2.WINDOW_FULLSCREEN)
         
-        #time.sleep(3)
+        Zoffset = 8
         # Loop for detection
         ret, frame = cap.read()
         time.sleep(0.001)
@@ -127,7 +127,7 @@ class detection:
                     
 
                     # dictionnary for detected object
-                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[0][0]), int(corners2D[0][1])), Z = 0)
+                    point3D = self.calib.project_2D_to_3D(Point2D(int(corners2D[0][0]), int(corners2D[0][1])), Z = Zoffset)
                     objectID = int(markerID)
                     classID = "aruco"
                     position = {"x" : float(point3D.x),

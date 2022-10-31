@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import logging
 import csv
 from sklearn.metrics import mean_squared_error
@@ -29,20 +29,24 @@ class evaluate():
                             pred_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
                             pred_t.append(float(msg["spec"]["time"]))
                             pred_ids.append(int(msg["spec"]["id"]))
-                            #wrt_tracker.writerow({'x' : msg["spec"]["x"],
-                            #                        'y' : msg["spec"]["y"],
-                            #                        'time' : msg["spec"]["time"]})
+                            wrt_tracker.writerow({'x' : msg["spec"]["x"],
+                                       'y' : msg["spec"]["y"],
+                                        'time' : time.time()})
                         elif msg["method"] == "GroundTruth":
                             gt_pos.append([float(msg["spec"]["x"]),float(msg["spec"]["y"])])
                             gt_t.append(time.time())
-                            gt_ids.append(int(msg["spec"]["id"]))
+                            gt_ids.append(0)
+                            wrt_vive.writerow({'x' : msg["spec"]["x"],
+                                       'y' : msg["spec"]["y"],
+                                        'time' : time.time()})
                     except:
                         pass
-        if len(gt_pos) != 0:
-            MSEs = compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
-            MSE_at_position(pred_pos, pred_t, MSEs)
-        else:
-            logging.debug("No ground truth received")
+                
+            if len(gt_pos) != 0:
+                MSEs = compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
+                MSE_at_position(pred_pos, pred_t, MSEs)
+            else:
+                logging.debug("No ground truth received")
         logging.debug("evaluate stopped")
         
 def interpolate_data(position, time):
@@ -93,10 +97,10 @@ def MSE_at_position(pred_pos, pred_t, MSEs):
     plt.axis([-250, 250, -250, 250])
 
     #cm = plt.cm.get_cmap('jet')
+    
+    pred_pos = np.array(pred_pos)
 
-    plt.scatter(x = pred_pos[0], y = pred_pos[1], c = MSEs, marker = 'x')#, cmap = cm)  
+    plt.scatter(x = pred_pos[:,0], y = pred_pos[:,1], c = MSEs, marker = 'x')#, cmap = cm)  
     
     plt.colorbar(label="MSE", orientation="vertical") 
-    plt.legend()
     plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/local_data/cmap_position_MSE.png")
-    plt.show()

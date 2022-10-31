@@ -26,7 +26,7 @@ class identification:
         loop to process the different messages received concerning the connections between agents
         """
         while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
-            self.init() 
+            self.init()
             if(not(self.dicqueue.Qtoidentification.empty())):
                 received = self.dicqueue.Qtoidentification.get()
                 if(received["method"]=="ackinit"):
@@ -36,7 +36,6 @@ class identification:
             received = self.dicqueue.Qtoidentification.get()
             #casing of msg
             if(received["method"]=="init"):
-                logging.debug("init received")
                 self.ackinit(received)
             if(received["method"]=="ackinit"):
                     self.received_ackinit(received)

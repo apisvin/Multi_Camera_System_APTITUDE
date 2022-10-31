@@ -1,4 +1,5 @@
 from queue import Queue
+import logging
 
 class dicqueue:
     """
@@ -30,3 +31,10 @@ class dicqueue:
         self.QtoVIVE =              Queue()
         self.Qtoeval =              Queue()
         self.Qtobenchmark =         Queue()
+        
+    def length(self):
+        buf = "length of dicqueue : \n"
+        buf = buf + "Qtosendunicast = {}\n".format(self.Qtosendunicast.qsize())
+        buf = buf + "Qtosendbroadcast = {}\n".format(self.Qtosendbroadcast.qsize())
+        buf = buf + "Qtoidentification = {}\n".format(self.Qtoidentification.qsize())
+        logging.debug(buf)
