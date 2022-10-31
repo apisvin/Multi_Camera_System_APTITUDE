@@ -107,6 +107,10 @@ class App(Tk):
         button = ttk.Button(self, text='Save config',command=lambda : self.save_clicked())
         button.grid(row=r, column=0)
         r+=1
+        
+        button = ttk.Button(self, text='Load config',command=lambda : self.load_clicked())
+        button.grid(row=r, column=0)
+        r+=1
 
         ###################################################
 
@@ -134,6 +138,8 @@ class App(Tk):
         button = ttk.Button(self, text='Begin benchmark',command=lambda : self.launch_benchmark())
         button.grid(row=r, column=1)
         r+=1
+        
+        self.lineID=0
 
 
         
@@ -143,7 +149,8 @@ class App(Tk):
         #create lauuncher in hardware manager 
         l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
         self.hardware_manager.add(l)
-        self.list_command.insert(END, ("ADD", agenttype, l.n.myself.hardwareID))
+        self.list_command.insert(END, ("ADD", agenttype, level, DNS, l.n.myself.hardwareID, self.lineID))
+        self.lineID+=1
         
 
 
@@ -153,31 +160,54 @@ class App(Tk):
             logging.warning("please select an agent that exists.")
         else:
             removed_type = self.list_command.get(index)[1]
-            removed_hardwareID = self.list_command.get(index)[2]  #extract corresponding hardwareID
-            """msg = {"source" : "GUI",
-                    "destination" : "hardware_manager",
-                    "method" : "remove",
-                    "spec" : {"hardwareID" : removed_hardwareID}}
-            self.hardware_manager.QtoHardwareManager.put(msg)"""
+            removed_hardwareID = self.list_command.get(index)[4]  #extract corresponding hardwareID
+            removed_lineID = self.list_command.get(index)[5]
             #self.list_command.delete(index)                       #delete line
-            self.list_command.insert(END, ("REMOVE", removed_type, removed_hardwareID))
-
-
-        pass
+            self.list_command.insert(END, ("REMOVE", removed_type, removed_hardwareID, removed_lineID))
+        self.lineID+=1
 
     def add_time(self, interval):
         if not interval.isdigit():
             logging.warning("please type an integer for time interval.")
         else:
             self.list_command.insert(END, ("INTERVAL", int(interval)))
+        self.lineID+=1
 
         
     def save_clicked(self):
         #read all command and save in a file
-        with open("../local_data/config.txt") as fd:
+        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/config.pickle", "wb") as fd:
+            commands=[]
             for index in range(self.list_command.size()):
+                command = []
                 line = self.list_command.get(index)
-                fd.write(line)
+                for c in line:
+                    command.append(c)
+                commands.append(command)
+            pickle.dump(commands, fd)
+            
+                
+    def load_clicked(self):
+        #load all command from a txt file 
+        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/config.pickle", "rb") as fd:
+            commands = pickle.load(fd)
+            for command in commands:
+                if command[0]=="ADD":
+                    agenttype = command[1]
+                    level = command[2]
+                    DNS = command[3]
+                    self.add_clicked(DNS, agenttype, level)
+                elif command[0] == "REMOVE":
+                    removed_type = command[1]
+                    removed_lineID = command[3]
+                    removed_hardwareID = self.list_command.get(removed_lineID)[4]
+                    self.list_command.insert(END, ("REMOVE", removed_type, removed_hardwareID, removed_lineID))
+                elif command[0] == "INTERVAL":
+                    interval = command[1]
+                    self.list_command.insert(END, ("INTERVAL", int(interval)))
+                
+                
+                    
 
     def launch_benchmark(self):
         #synchronization between hardware
@@ -218,7 +248,7 @@ class App(Tk):
             print(line)
             if line[0] == "ADD":
                 #launch agent 
-                hardwareID = line[2]
+                hardwareID = line[4]
                 l = self.hardware_manager.get(hardwareID)
                 threading.Thread(target=l.launch, args=()).start()
             elif line[0] == "INTERVAL":

@@ -81,9 +81,9 @@ class tracker():
     def launch_plot(self):
         list_marker = ['x', 'o', 'v', '^']
         plt.ion()
-        fig = plt.figure()
+        fig, ax = plt.subplots()
         plt.axis([-250, 250, -250, 250])
-        ax = fig.add_subplot(111)
+        #ax = fig.add_subplot(111)
         marker = 0
         dicplot = {}
         while self.stopFlag.is_set()==False:

@@ -38,8 +38,11 @@ class evaluate():
                             gt_ids.append(int(msg["spec"]["id"]))
                     except:
                         pass
-        MSEs = compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
-        MSE_at_position(pred_pos, pred_t, MSEs)
+        if len(gt_pos) != 0:
+            MSEs = compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = True)
+            MSE_at_position(pred_pos, pred_t, MSEs)
+        else:
+            logging.debug("No ground truth received")
         logging.debug("evaluate stopped")
         
 def interpolate_data(position, time):
@@ -71,11 +74,12 @@ def compute_MSE(gt_pos, gt_t, pred_pos, pred_t, display = False):
         MSEs.append(MSE)
 
     if(display):
-        plt.plot(number_sample, MSEs)
-        plt.xlabel('Number of recorded data')
-        plt.ylabel('MSE')
-        plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/local_data/fig.png")
-        plt.show()
+        fig, ax = plt.subplots()
+        ax.plot(number_sample, MSEs)
+        ax.set_xlabel('Number of recorded data')
+        ax.set_ylabel('MSE')
+        plt.savefig("/home/pi/Multi_Camera_System_APTITUDE/local_data/MSE.png")
+        #plt.show()
 
     return MSEs
 
@@ -88,9 +92,9 @@ def MSE_at_position(pred_pos, pred_t, MSEs):
     fig = plt.figure()
     plt.axis([-250, 250, -250, 250])
 
-    cm = plt.cm.get_cmap('jet')
+    #cm = plt.cm.get_cmap('jet')
 
-    plt.scatter(x = pred_pos[0], y = pred_pos[1], c = MSEs, marker = 'x', cmap = cm)  
+    plt.scatter(x = pred_pos[0], y = pred_pos[1], c = MSEs, marker = 'x')#, cmap = cm)  
     
     plt.colorbar(label="MSE", orientation="vertical") 
     plt.legend()
