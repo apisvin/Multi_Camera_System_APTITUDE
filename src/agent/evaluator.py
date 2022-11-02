@@ -5,8 +5,9 @@ from sklearn.metrics import mean_squared_error
 from scipy import interpolate
 import matplotlib.pyplot as plt
 import time
+from agent.agent import Agent
 
-class evaluate():
+class Evaluator(Agent):
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         self.stopFlag = stopFlag

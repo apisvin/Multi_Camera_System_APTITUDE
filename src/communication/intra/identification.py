@@ -25,33 +25,37 @@ class identification:
         """
         loop to process the different messages received concerning the connections between agents
         """
-        while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
+        """while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
             self.init()
             if(not(self.dicqueue.Qtoidentification.empty())):
                 received = self.dicqueue.Qtoidentification.get()
                 if(received["method"]=="ackinit"):
-                    self.received_ackinit(received)
+                    self.received_ackinit(received)"""
                     
         while self.stopFlag.is_set()==False:
-            received = self.dicqueue.Qtoidentification.get()
-            #casing of msg
-            if(received["method"]=="init"):
-                self.ackinit(received)
-            if(received["method"]=="ackinit"):
-                    self.received_ackinit(received)
-            elif(received["method"]=="ackparent"):
-                self.received_ackparent(received)
-            elif(received["method"]=="initcluster"):
-                self.received_initcluster(received)
-            elif(received["method"]=="quit"):
-                self.quit(received)
-                break #break the loop because the agent quit the network
-            elif(received["method"]=="disappear"):
-                self.disappear(received)
-            elif(received["method"]=="forward_disappear"):
-                self.forward_disappear(received)
-            elif(received["method"]=="detect"):
-                self.detect(received)
+            try:
+                received = self.dicqueue.Qtoidentification.get(timeout=2)
+                #casing of msg
+                if(received["method"]=="init"):
+                    self.ackinit(received)
+                if(received["method"]=="ackinit"):
+                        self.received_ackinit(received)
+                elif(received["method"]=="ackparent"):
+                    self.received_ackparent(received)
+                elif(received["method"]=="initcluster"):
+                    self.received_initcluster(received)
+                elif(received["method"]=="quit"):
+                    self.quit(received)
+                    break #break the loop because the agent quit the network
+                elif(received["method"]=="disappear"):
+                    self.disappear(received)
+                elif(received["method"]=="forward_disappear"):
+                    self.forward_disappear(received)
+            except:
+                #if no msg received after timeout
+                #if no DNS -> no parent -> send init message
+                if not self.neighbourhood.myself.DNS:
+                    self.init()
         logging.debug("identification stopped")
                     
     def init(self):
@@ -64,7 +68,7 @@ class identification:
                 "method" : "init",
                 "spec" : {}}
         self.dicqueue.Qtosendbroadcast.put(msg)
-        time.sleep(2) #wait response
+        #time.sleep(2) #wait response
         
     def ackinit(self, receptedmsg):
         """
@@ -73,7 +77,7 @@ class identification:
         """
         dictagent = receptedmsg["source"]
         newagent = neighbour.asdict(dictagent)
-        logging.debug("init message is : {}".format(receptedmsg))
+        #logging.debug("init message is : {}".format(receptedmsg))
         #newagent is one level under and no DNS
         if(newagent.level + 1 == self.neighbourhood.myself.level
            and newagent.DNS == ""):
@@ -128,7 +132,7 @@ class identification:
             parent neighbour is created and add to neighbourhood 
             cluster is extracted and initcluster is sent to all members of cluster
         """
-        logging.debug("received ackinit for {}".format(self.neighbourhood.myself))
+        logging.debug("ackinit received by {}".format(self.neighbourhood.myself.__dict__))
         #if i don t have a parent 
         if(self.neighbourhood.parent==0): 
             dictmyself = receptedmsg["destination"]

@@ -9,8 +9,9 @@ from filterpy.common import Q_discrete_white_noise
 from collections import deque
 import logging
 import csv
+from agent.agent import Agent
 
-class tracker():
+class Tracker(Agent):
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         self.stopFlag = stopFlag
@@ -20,7 +21,7 @@ class tracker():
         self.dictracker = {} #dictionnary to manage all trackers
         self.Qtoplot = self.dicqueue.Qtoplot if self.display else 0
     
-    def launch_tracker(self):
+    def launch(self):
         #the role of this function is to distribute the observation to
         #the corresponding kalman filter. If there is none, it creates
         #a kalman filter
@@ -95,10 +96,10 @@ class tracker():
                 dicplot[str(kalman_id)].set_ydata(ystate)
             else:
                 #create new plot and add to dicplot
-                dicplot[str(kalman_id)], = ax.plot(xstate,ystate,list_marker[marker], label="object "+str(kalman_id))
-                ax.legend()
+                dicplot[str(kalman_id)], = ax.plot(xstate,ystate,list_marker[marker])#, label="object "+str(kalman_id))
+                #ax.legend()
             fig.canvas.draw()
-            fig.canvas.flush_events()
+            #fig.canvas.flush_events()
                
 def euclidean_distance(p1, p2):
     return np.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)

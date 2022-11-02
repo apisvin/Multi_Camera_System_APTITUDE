@@ -37,4 +37,7 @@ class dicqueue:
         buf = buf + "Qtosendunicast = {}\n".format(self.Qtosendunicast.qsize())
         buf = buf + "Qtosendbroadcast = {}\n".format(self.Qtosendbroadcast.qsize())
         buf = buf + "Qtoidentification = {}\n".format(self.Qtoidentification.qsize())
-        logging.debug(buf)
+        buf = buf + "QtoHardwareManager = {}\n".format(self.QtoHardwareManager.qsize())
+        buf = buf + "Qtotracker = {}\n".format(self.Qtotracker.qsize())
+        buf = buf + "Qtoplot = {}\n".format(self.Qtoplot.qsize())
+        return buf

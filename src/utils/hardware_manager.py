@@ -16,7 +16,7 @@ import time
     
 class hardware_manager:
     
-    def __init__(self, QtoHardwareManager, Qtosendunicast, Qtosendbroadcast, selforganization = True):
+    def __init__(self, QtoHardwareManager, Qtosendunicast, Qtosendbroadcast, selforganization = False):
         self.QtoHardwareManager = QtoHardwareManager
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast

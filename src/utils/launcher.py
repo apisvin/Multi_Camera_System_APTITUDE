@@ -10,10 +10,11 @@ from communication.intra.identification import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
-from agent.detection import *
+from agent.detector import *
 from agent.tracker import *
-from agent.evaluate import *
+from agent.evaluator import *
 from agent.vive import *
+from agent.recorder import *
 from calibration.calibrate import *
 import logging
 
@@ -40,12 +41,14 @@ class launcher:
         self.launch_identification()
         if(self.n.myself.agenttype == "blank"):
             pass
-        elif(self.n.myself.agenttype == "detection"):
+        elif(self.n.myself.agenttype == "detector"):
             self.launch_detection()
-        elif(self.n.myself.agenttype == "tracking"):
+        elif(self.n.myself.agenttype == "tracker"):
             self.launch_tracker()
-        elif(self.n.myself.agenttype == "evaluate"):
+        elif(self.n.myself.agenttype == "evaluator"):
             self.launch_evaluate()
+        elif(self.n.myself.agenttype == "recorder"):
+            self.launch_recorder()
         elif(self.n.myself.agenttype == "vive"):
             self.launch_VIVE()
 
@@ -75,17 +78,21 @@ class launcher:
         ids_3D = np.array([0,10,12,14,16,18,20,22,24])
         (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
 
-        d = detection(self.stopFlag, calib, self.dicqueue, True)
+        d = Detector(self.stopFlag, self.n, self.dicqueue,calib, True)
         threading.Thread(target=d.launch, args=()).start()
         
     def launch_tracker(self):
-        t = tracker(self.stopFlag, self.n, self.dicqueue)
-        threading.Thread(target=t.launch_tracker, args=()).start()
+        t = Tracker(self.stopFlag, self.n, self.dicqueue)
+        threading.Thread(target=t.launch, args=()).start()
         
     def launch_evaluate(self):
-        e = evaluate(self.stopFlag, self.n, self.dicqueue)
+        e = Evaluator(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=e.launch, args=()).start()
         
+    def launch_recorder(self):
+        r = Recorder(self.stopFlag, self.dicqueue)
+        threading.Thread(target=r.launch, args=()).start()
+        
     def launch_VIVE(self):
-        v = vive(self.stopFlag, self.dicqueue)
+        v = Vive(self.stopFlag, self.dicqueue)
         threading.Thread(target=v.launch, args=()).start()

@@ -55,7 +55,7 @@ class App(Tk):
         type_label = ttk.Label(self, text="Agent type :")
         type_label.grid(row=r, column=0)
         r+=1
-        types = ("Detection", "Tracking", "VIVE", "evaluate", "Blank")
+        types = ("Detector", "Tracker", "VIVE", "evaluator", "Recorder", "Blank")
         agenttype = StringVar()
         for t in types:
             rb = ttk.Radiobutton(

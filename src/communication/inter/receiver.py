@@ -132,7 +132,7 @@ def put_on_queue(dictReceived, dicqueue):
         dicqueue.QtoHardwareManager.put(dictReceived)
         
     if(dictReceived["method"] == "GroundTruth"):
-        dicqueue.Qtoeval.put(dictReceived)
+        dicqueue.QtoVIVE.put(dictReceived)
         
     if(dictReceived["method"] == "benchmark"):
         dicqueue.Qtobenchmark.put(dictReceived)

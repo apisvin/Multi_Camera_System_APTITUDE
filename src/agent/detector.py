@@ -7,46 +7,42 @@ import time
 import sys
 import logging
 from agent.output.bboxes_2d import *
+from agent.agent import Agent
 
 
-
-class detection:
+class Detector(Agent):
     """
     detection is used by detection agent. The hardware must be equipped
     with a camera and opencv
     """
     
-    def __init__(self, stopFlag, calib, dicqueue, display=False):
+    def __init__(self, stopFlag, neighbourhood, dicqueue, calib, display=False):
         """
         stopFlag : flag to stop executing thread 
         dicqueue : distionnary containing queues for inter-thread communication
         """
         self.stopFlag= stopFlag
         self.dicqueue = dicqueue
+        self.neighbourhood = neighbourhood
         self.calib = calib
         self.display = display
         self.fps = 1
         
     def launch(self):
-        """ 
-        Une phase de calibration est necessaire
-        """
-        
+        # Sizing frames
         width = 1920
         height = 1088
-        
-        # Sizing frames
         cap = cv2.VideoCapture(-1)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        cap.set(cv2.CAP_PROP_FPS, self.fps)
+        #cap.set(cv2.CAP_PROP_FPS, self.fps)
         
         #set buffersize to display without delay
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         cv2.namedWindow("frame", cv2.WINDOW_FULLSCREEN)
         
-        Zoffset = 8
+        Zoffset = 0
         # Loop for detection
         ret, frame = cap.read()
         time.sleep(0.001)
@@ -148,7 +144,7 @@ class detection:
                     objects.append(detobject)
             
             
-            if(len(objects)>0):
+            if(len(objects)>0 and self.neighbourhood.parent != 0):
                 end = time.time()
                 """
                 BBoxes = BBoxes2D(end-start, np.array(bboxes), np.array(classIDs), np.ones(len(bboxes)), frame.shape[1], frame.shape[0])
@@ -157,11 +153,11 @@ class detection:
                        "destination" : "",
                        "method" : "detect",
                        "spec" : {"BBoxes2D" : BBoxes}}"""
-                msg = {"source" : "",
-                       "destination" : "",
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                       "destination" : self.neighbourhood.parent.__dict__,
                        "method" : "detect",
                        "spec" : {"objects" : objects}}
-                self.dicqueue.Qtoidentification.put(msg)
+                self.dicqueue.Qtosendunicast.put(msg)
             ####################################################
             if self.display:
                 frameResized = cv2.resize(frame, (960,540))

@@ -3,8 +3,8 @@
 
 from abc import ABC, abstractmethod
 
-class agent(ABC):
+class Agent(ABC):
 
     @abstractmethod
-    def launch_task():
+    def launch():
         pass
