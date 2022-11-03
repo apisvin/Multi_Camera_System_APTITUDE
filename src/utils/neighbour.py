@@ -8,29 +8,40 @@ class neighbour:
     
     def __init__(self, ip, agenttype, level, hardwareID=""):
         """
-        La classe neighbour représente un agent du reseau. Un agent est défini par :
-            - son addresse IP : identifiant socket UDP
-            - son type : sa tache prédéfini qu'il doit accomplir dans le système (detection, tracking, ...)
-            - sa DNS : un string reprenant l ensemble des agent depuis la racine. Elle se construit de manière récursive lors de l'insertion d'un agent au réseau
-            - masterDNS : La variable DNS de l agent parent
-            - level : le niveau dans lequel l agent appartient dans l arbre. Le niveau 0 est l agent de plus bas niveau (detection)
-            - son age : le temps depuis la reception du dernier message "alive"
-            - hadwareID : identifiant unique donne à l agent lors de sa creation
+        The neighbor class represents an agent of the network. An agent is defined by :
+            - its IP address : UDP socket identifier
+            - its type : its predefined task that it must accomplish in the system (detection, tracking, ...)
+            - its DNS : a string containing all the agents since the root. It is built recursively when an agent is inserted in the network
+            - masterDNS : The DNS variable of the parent agent
+            - level : the level in which the agent belongs in the tree. Level 0 is the lowest level agent (detection)
+            - son age : the time since the last "alive" message was received
+            - hardwareID : unique identifier given to the agent when it was created
+        Args : 
+            ip : IP address of the hardware containing the neighbour
+            agenttype : type of the neighbour 
+            level : level in which the neighbour is in the hierarchy
+            hardwareID : unique uuid identifier for each neighbour 
         """
         self.ip=ip
         self.agenttype = agenttype
         self.DNS = ""
         self.masterDNS = ""
-        self.level = level #constants.LEVEL
+        self.level = level
         self.age = time.time()
+        #if no specified hardwareID, create one
         if(hardwareID==""):
-            self.hardwareID = uuid.uuid1().hex #random ID to identify agent on hardware 
+            self.hardwareID = uuid.uuid1().hex #random ID to identify neighbour on hardware 
         else:
             self.hardwareID = hardwareID #if specified, give hardwareID
         self.isLeader = False
 
     @classmethod
     def asdict(cls, dictagent):
+        """
+        constructor based on a dicionnary
+        Args : 
+            dictagent : dictionnary containing all the information required to create a neighbour
+        """
         newNeighbour = cls(ip = dictagent["ip"], agenttype=dictagent["agenttype"], level=dictagent["level"])
         newNeighbour.DNS = dictagent["DNS"]
         newNeighbour.masterDNS = dictagent["masterDNS"]
@@ -41,7 +52,7 @@ class neighbour:
     
     def generate_own_IP(self):
         """
-        permet d extrait l adresse IP de l hardware
+        Procedure that give the ip address of the hardware to the self.ip variable
         """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
@@ -57,32 +68,38 @@ class neighbour:
 
     def update_IP(self, newIP):
         """
-        change l'adresse IP par newIP
+        Change ip address of the neighbour by newIP
+        Args :
+            newIP : new IP address to give to the neighbour
         """
         self.IP = newIP
     
     def update_DNS(self, newDNS):
         """
-        change la DNS par newDNS et change la variable agentID
+        Change DNS of the neighbour by newDNS
+        Args :
+            newDNS : new DNS to give to the neighbour
         """
         self.DNS = newDNS
     
     def update_master_DNS(self, newmasterDNS):
         """
-        change la DNS du master par newmasterDNS et change la variable masterID
+        Change DNS's master of the neighbour by newmasterDNS
+        Args :
+            newmasterDNS : new DNS to give to the master
         """
         self.masterDNS = newmasterDNS
         
     def update_all_DNS(self, newDNS, newmasterDNS):
         """
-        change la DNS de l agent et de son master
+        change the DNS of the neighbour and its master
         """
         self.update_DNS(newDNS)
         self.update_master_DNS(newmasterDNS)
     
     def update_level_master(self):
         """
-        change le master en pour son grand parent
+        change the master of the neighbour for the master of the master 
         """
         DNSlist = self.masterDNS.split(".")
         separator = "."
@@ -91,7 +108,7 @@ class neighbour:
         
     def update_age(self):
         """
-        actualise la variable age
+        update the age of the neighbour
         """
         self.age = time.time()
     

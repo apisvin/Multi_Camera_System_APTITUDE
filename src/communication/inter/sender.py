@@ -7,13 +7,6 @@ UDP_IP = ''
 
 
 class sender:
-    """
-    la classe sender permet de traiter les messages sortant de l hardware.
-    Pour des soucis d efficacite, une seule classe sender est creee par hardware.
-    Cela permet de ne pas devoir ouvrir plusiers canaux de communication (socket).
-    Afin de conaitre l ensemble des agents herberges sur l hardware, une variable manager_hardware est utilisee.
-    Elle contient l ensemble des agents contenu sur l hardware. Il est possible de les distinguer par un identifier unique : hardware_ID
-    """
     
     def __init__(self,manager_hardware, Qtosendunicast, Qtosendbroadcast):
         """
@@ -28,8 +21,6 @@ class sender:
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
         self.manager_hardware = manager_hardware
-        
-        #self.neighbourhood = neighbourhood
         
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
@@ -84,8 +75,7 @@ class sender:
             #send to  all agents on same hardware
             for hardwareID, launcher in self.manager_hardware.launchers.items():
                 if(hardwareID != msg["source"]["hardwareID"]): #Do not send to itself
-                    put_on_queue(msg, launcher.dicqueue)
-                
+                    put_on_queue(msg, launcher.dicqueue) 
             #And send to network
             msgJson = json.dumps(msg)
             addr = ('192.168.0.255', PORT)

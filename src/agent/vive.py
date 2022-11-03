@@ -7,6 +7,12 @@ from agent.agent import Agent
 class Vive(Agent):
     
     def __init__(self, stopFlag, dicqueue):
+        """
+        Vive records the position received from the VIVE tracker in the VR room
+        Args : 
+            stopFlag : flag to stop executing thread 
+            dicqueue : distionnary containing queues for inter-thread communication
+        """
         self.stopFlag = stopFlag
         self.dicqueue = dicqueue
         
@@ -22,6 +28,8 @@ class Vive(Agent):
                                        'y' : msg["spec"]["y"],
                                         'time' : time.time()})
                 except:
+                    #the except catch the error from the get(timeout)
+                    #This operation is necesssary to avoid the blocking property of the get() method
                     pass
             logging.debug("VIVE stopped")
 

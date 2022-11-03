@@ -1,25 +1,26 @@
 import cv2
 import numpy as np
 from calib3d import Point3D, Point2D
-import uuid
-from matplotlib import pyplot as plt
 import time
-import sys
 import logging
 from agent.output.bboxes_2d import *
 from agent.agent import Agent
 
 
 class Detector(Agent):
-    """
-    detection is used by detection agent. The hardware must be equipped
-    with a camera and opencv
-    """
     
     def __init__(self, stopFlag, neighbourhood, dicqueue, calib, display=False):
         """
-        stopFlag : flag to stop executing thread 
-        dicqueue : distionnary containing queues for inter-thread communication
+        Detector is a detection agent. It has to process the video from camera in real time 
+        or from a video file. It detects Aruco marker and return their coordinate at each frame in a
+        global referential. The camera has to be calibrated.
+        Args:
+            stopFlag : flag to stop executing thread 
+            neighbourhood : a class containing all neighbours of the agent
+            dicqueue : distionnary containing queues for inter-thread communication
+            calib : Calib class contains information about the positioning of the camera in space in a global referential.
+                    This class is used to tranform 2D coordinate in the plane of the camera frame to 3D coordinate in the global referential.
+            display : boolean for displaying in a window the current video (in real time from camera or from video)
         """
         self.stopFlag= stopFlag
         self.dicqueue = dicqueue
@@ -29,6 +30,11 @@ class Detector(Agent):
         self.fps = 1
         
     def launch(self):
+        """
+        Launch the detection loop. It reads the camera video flux or video file. Then, it detects aruco markers 
+        and tranform their 2D coordinates in the plane of the image into 3D coordinates of the global frame.
+        Finally, its sends all its detections to its parent if it has one.
+        """
         # Sizing frames
         width = 1920
         height = 1088

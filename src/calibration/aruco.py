@@ -6,8 +6,9 @@ from calib3d import Point3D, Point2D
 arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)    #The ArUco dictionary we are using. 50 unique aruco with 4x4 pixels
 
 def detect_aruco(image, nb_aruco):
-    #(source : https://www.pyimagesearch.com/2020/12/21/detecting-aruco-markers-with-opencv-and-python/)
     """
+        source : https://www.pyimagesearch.com/2020/12/21/detecting-aruco-markers-with-opencv-and-python/
+
         input : 
             image : The input image that we want to detect ArUco markers in
         
@@ -20,7 +21,6 @@ def detect_aruco(image, nb_aruco):
     (corners, ids, rejected) = cv2.aruco.detectMarkers(image, arucoDict,parameters=arucoParams)
     #corners: A list containing the (x, y)-coordinates of our detected ArUco markers
     #ids : The ArUco IDs of the detected markers
-
 
     topLeft = np.zeros((nb_aruco, 1, 2), dtype='float32') #array containing all the top left corner position
     id_aruco = np.zeros((nb_aruco,))
@@ -49,13 +49,14 @@ def detect_aruco(image, nb_aruco):
 
 def generate_aruco(nb_aruco, destination):
     """
+        SOURCE : https://www.pyimagesearch.com/2020/12/14/generating-aruco-markers-with-opencv-and-python/
+        generate aruco markers from 0 to nb_aruco in destination folder
         input : 
             nb_aruco : number of aruco figure to generate
-            destination : path to the destination folder where aruco are located
+            destination : path to the destination folder where arucos are located
         output : 
-
+            NONE
     """
-    #SOURCE / https://www.pyimagesearch.com/2020/12/14/generating-aruco-markers-with-opencv-and-python/
     arucoParams = cv2.aruco.DetectorParameters_create()
     position = np.zeros((nb_aruco,3))
 
@@ -100,29 +101,4 @@ def create_3D_position(nb_aruco, length):
     return position
 
 
-def test():
-    generate_aruco(25, "aruco_image/")
-
-    image = cv2.imread('test.png')
-
-    (topLeft, ids, newimage) = detect_aruco(image, 4)
-
-    cv2.imwrite("aruco_detetcted.png", newimage)
-
-    x = np.array([0, 1])
-    y = np.array([0, 1])
-    z = np.array([0, 0])
-    aruco_3D = Point3D(x,y,z)
-    print(aruco_3D)
-    ids_3D = np.array([12,22])
-
-    x = np.array([150, 250])
-    y = np.array([150, 250])
-    aruco_2D = Point2D(x,y)
-    print(aruco_2D)
-    ids_2D = np.array([22,12])
-
-    print(match_aruco(aruco_3D, ids_3D, aruco_2D, ids_2D))
-
-#test()
  

@@ -30,14 +30,31 @@ class launcher:
     """
 
     def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager):
-        self.stopFlag = threading.Event()                               #Flag to stop thread when agent is quitting 
-        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager)      #to store all Queue's (communication between threads)
-        myself = neighbour(ip="", agenttype=agenttype, level=level)     #to know all paramters of myself as neighbour
+        """
+        Launcher class represents a agent and start all of its threads 
+        This class contains all the informatioin relative to the agent.
+        Args : 
+            agenttype : string specifiing the type of agent
+            level : level in which the agent is in the hierarchy
+            DNS : string representing the DNS of the agent
+            Qtosendunicast : queue to send messages to sender_unicast
+            Qtosendbroadcast : queue to send messages to sender_broadcast
+            QtoHardwareManager : queue to send messages to the hardware_manager  
+        """
+        self.stopFlag = threading.Event() #Set() the flag stops all threads 
+        self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager) #to store all Queue's (communication between threads)
+        myself = neighbour(ip="", agenttype=agenttype, level=level) #to know all paramters of myself as neighbour
         myself.update_DNS(DNS)
         myself.generate_own_IP()
-        self.n = neighbourhood(myself)                                  #to store all neighbours
+        self.n = neighbourhood(myself) #to store all neighbours
         
     def launch(self):
+        """
+        Procedure to start all threads running for a specific agent defined as a launcher class 
+        First, identification task is launched. This task aims to understand messages from other agents
+        and process them.
+        Then, in function of the agent type, it launchs the specific task correspong to the agent.
+        """
         self.launch_identification()
         if(self.n.myself.agenttype == "blank"):
             pass
@@ -54,6 +71,9 @@ class launcher:
 
     
     def launch_identification(self):
+        """
+        Procedure to start identification thread and three threads of watcher
+        """
         i = identification(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=i.loop_identification, args=()).start()
         #add watcher to deal with missing agent
@@ -63,9 +83,13 @@ class launcher:
         threading.Thread(target=w.check_age, args=()).start()
 
     def launch_detection(self):
+        """
+        Procedure to start detection task. First, the camera has to be calibrated. From a image file 
+        containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
+        Then, the processing loop of the detector is launched.
+        """
         #calibration
         image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/local_data/image_calibration.png')
-
         aruco_3D = np.array([[0.,0.,0.],
                             [100.,0.,0.],
                             [0.,100.,0.],
@@ -77,22 +101,34 @@ class launcher:
                             [100.,-100.,0.]], dtype='float32')
         ids_3D = np.array([0,10,12,14,16,18,20,22,24])
         (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
-
+        
         d = Detector(self.stopFlag, self.n, self.dicqueue,calib, True)
         threading.Thread(target=d.launch, args=()).start()
         
     def launch_tracker(self):
+        """
+        Procedure to start the tracking task. It create the Tracker and start the processing loop.
+        """
         t = Tracker(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=t.launch, args=()).start()
         
     def launch_evaluate(self):
+        """
+        Procedure to start the evaluating task. It create the Evaluator and start the processing loop.
+        """
         e = Evaluator(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=e.launch, args=()).start()
         
     def launch_recorder(self):
+        """
+        Procedure to start the recording task. It create the Recorder and start the processing loop.
+        """
         r = Recorder(self.stopFlag, self.dicqueue)
         threading.Thread(target=r.launch, args=()).start()
         
     def launch_VIVE(self):
+        """
+        Procedure to start the vive task. It create the Vive and start the processing loop.
+        """
         v = Vive(self.stopFlag, self.dicqueue)
         threading.Thread(target=v.launch, args=()).start()

@@ -17,6 +17,16 @@ import time
 class hardware_manager:
     
     def __init__(self, QtoHardwareManager, Qtosendunicast, Qtosendbroadcast, selforganization = False):
+        """
+        hardware_manager is a class that manage the creation and suppression of agents on the hardware.
+        There is only one hardware_manager per hardware. Threads can communicate with this class to create
+        or remove an agent.
+        Args : 
+            QtoHardwareManager : queue to send messages to this class 
+            Qtosendunicast : queue to send messages to sender_unicast
+            Qtosendbroadcast : queue to send messages to sender_broadcast
+            selforganization : boolean to activate selforganization comportment
+        """
         self.QtoHardwareManager = QtoHardwareManager
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
@@ -27,10 +37,14 @@ class hardware_manager:
         self.QtoReceiveCreationSupervisor = Queue()
         self.cpu = 0
         self.ram = 0
-        self.launchers = {} #contient l'esemble des launchers sur cette hardware identifiable par hardwareID
+        self.launchers = {} #dictionnary containing all launcher classes indentified by their hardwareID
 
     #thread
     def hardware_manager(self):
+        """
+        Infinite loop running to manage agents on hardware.
+        Two main operations are required : create and remove
+        """
         while True: 
             msg = self.QtoHardwareManager.get()
             if (msg["method"]=="create"):
@@ -128,22 +142,30 @@ class hardware_manager:
 
 
     def add(self,launcher):
+        """
+        add the launcher corresponding to the agent to the launchers list
+        Args : 
+            launcher : launcher class to add to the hardware
+        """
         self.launchers[launcher.n.myself.hardwareID] = launcher
 
     def remove(self, hardwareID):
-        #send quit message to identification task
+        """
+        Remove the agent corresponding to the hardwareID from the launchers list
+        Args : 
+            hardwareID : hardwareID of the launcher to remove 
+        """
         removed_launcher = self.get(hardwareID)
         removed_neighbourhood = removed_launcher.n          # extract neighbourhood of quitting agent
         logging.debug(removed_neighbourhood.myself.DNS + " is quitting")
+        #send quit message to identification task
         msg = {"source" : removed_neighbourhood.myself.__dict__,
             "destination" : "",
             "method" : "quit",
             "spec" : {}}
-
         removed_launcher.dicqueue.Qtoidentification.put(msg)
-        
-        time.sleep(3)
-        removed_launcher.stopFlag.set() #set the flag to stop all threads associated to this agent 
+        #set the flag to stop all threads associated to this agent 
+        removed_launcher.stopFlag.set() 
         self.launchers.pop(hardwareID)
     
     def parentDisappeared(self, received):
@@ -200,18 +222,30 @@ class hardware_manager:
         self.Qtosendunicast.put(msg)
 
     def get(self, hardwareID):
+        """
+        return the launcher class corresponding to the hardwareID
+        """
         return self.launchers[hardwareID]
     
     def is_on_hardware(self, hardwareID):
+        """
+        return a boolean that tell if hardwareID is contained in launchers list
+        """
         return hardwareID in self.launchers
     
     def get_dicqueue(self, hardwareID):
+        """
+        return the dicqueue class of the launcher corresponing to hardwareID
+        """
         try:
             return self.launchers[hardwareID].dicqueue
         except:
             return -1
         
     def get_evaluate(self):
+        """
+        return a launcher class that correspond to a evaluator agent 
+        """
         for l in self.launchers.values():
             if l.n.myself.agenttype=="evaluate":
                 return l

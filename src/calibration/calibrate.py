@@ -23,7 +23,7 @@ def find_intersection(C, d, P, n):
     w = C - P
     si = -np.dot(n, w) / dotProduct
     point3D = Point3D(w + si * d + P)
-    assert isinstance(point3D, Point3D) #and 
+    assert isinstance(point3D, Point3D) 
     return point3D
 
 
@@ -33,16 +33,25 @@ class Calib():
     # The '*' in the arguments force to use keywords arguments instead of nameless values
     # The '**_' will be usefull later... it's for additional keywords arguments that are ignored here.
     def __init__(self, width, height, T, R, K, kc, **_):
+        """
+        Calib class is used to create a function that project 2D coordinate on the plane of the camera 
+        on a 3D frame in the real world and inversely.
+        Args : 
+            width : width in pixel of the image frame
+            height : heigth in pixel of the image frame
+            T : translation matrix 
+            R : rotation matrix
+            K : intrinsic camera matrix 
+            kc : distorsion coefficients
+        """
         self.width = width
         self.height = height
         self.T = T
         self.R = R
         self.K = K
-        self.P = K @ np.hstack((R, T))#np.block([K, np.zeros((3,1))]) @ np.block([[R, T], [np.zeros((1,3)), 1]])     # TODO: compute P
-        #print("P = ", self.P)
-        self.Pinv = np.linalg.pinv(self.P)  # TODO: compute Pinv
-        #print("Pinv = ", self.Pinv)
-        self.Kinv = np.linalg.pinv(self.K)  # TODO: compute Kinv
+        self.P = K @ np.hstack((R, T))
+        self.Pinv = np.linalg.pinv(self.P)
+        self.Kinv = np.linalg.pinv(self.K)
         self.kc=kc
         
     def project_3D_to_2D(self, points3D: Point3D):
@@ -53,7 +62,6 @@ class Calib():
             Returns:
                 The points in the 2D image space on which points3D are projected by calib
         """
-        # Write your implementation here
         point2D = Point2D(self.P @ points3D.H)
         assert isinstance(point2D, Point2D), "Output of this method should be a Point2D object"
         return self.distort(point2D)
@@ -67,19 +75,12 @@ class Calib():
             Returns:
                 The points in the 3D world for which the z=Z and that projects on points2D
         """
-        # Write your implementation here
         points2D = self.rectify(points2D)
-
-        C = Point3D(self.R.T @ self.T * -1)  # le (0,0,0) du repere cam dans le repere O
-
-        P3D = Point3D(self.Pinv @ points2D.H) # un point 3D correspondant. Pas le correct
-
+        C = Point3D(self.R.T @ self.T * -1)  # (0,0,0) of camera referential in global referential
+        P3D = Point3D(self.Pinv @ points2D.H) # a 3D point 
         d = P3D - C
-
         P = Point3D(0,0,Z)
-
         n = np.array([[0,0,1]]).T
-
         points = find_intersection(C, d, P, n)
         assert isinstance(points, Point3D), "Output of this method should be a Point3D object"
         return points
@@ -87,22 +88,17 @@ class Calib():
     def distort(self, point2D):
         if np.any(self.kc):
             rad1, rad2, tan1, tan2, rad3 = self.kc.flatten()
-            
             # Convert image coordinates to camera coordinates (with z=1 which is the projection plane)!
             point2D = Point2D(self.Kinv @ point2D.H)
-            
             r2 = point2D.x*point2D.x + point2D.y*point2D.y
             delta = 1 + rad1*r2 + rad2*r2*r2 + rad3*r2*r2*r2    #radial component
-        
             dx = np.array([[
                 2*tan1*point2D.x*point2D.y + tan2*(r2 + 2*point2D.x*point2D.x),
                 2*tan2*point2D.x*point2D.y + tan1*(r2 + 2*point2D.y*point2D.y)
             ]]).T                                               #tangential component
             point2D = Point2D(point2D*delta + dx)
-            
             # Convert camera coordinates to pixel coordinates !
             point2D = Point2D(self.K @ point2D.H)
-            
         return point2D
 
     def rectify(self, point2D): #to be modified
@@ -227,6 +223,9 @@ def draw_repere(image, calib, length=1):
 
 
 def create_pickle():
+    """
+    From image_calibration.png containing 9 aruco markers, construct Calib class and store it in calib.pickle
+    """
     image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/src/local_data/image_calibration.png')
 
     aruco_3D = np.array([[0.,0.,0.],

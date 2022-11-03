@@ -6,11 +6,6 @@ import time
 import logging
 
 class watcher():
-    """
-    la classe watcher permet surveiller l etat des connexions entre agents. 
-    Elle envoie periodiquement des messages ALIVE a ses voisins en attendant une reponse de leur part.
-    Si pas de reponse : la connexion est coupee 
-    """
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
@@ -19,10 +14,10 @@ class watcher():
             receive_alive : Receive alive messages from parent and children. It update the age variable of the source agent in neighbourhood
             check_age : check the age variable of parent and childrn in neighbourhood every $delay$ seconds. If the age exceeds 3*$delay$ seconds, the agent is supposed dead and removed from neighbourhood.
 
-        args:
-            stopFlag : flag pour signaler la fin de la tache 
-            neighbourhood : classe contenant l ensemble des voisins de l agent 
-            dicqueue : dictionnaire de queue afin de comminiquer entre taches 
+        Args:
+            stopFlag : flag to stop executing thread 
+            neighbourhood : a class containing all neighbours of the agent
+            dicqueue : distionnary containing queues for inter-thread communication
         """
         self.stopFlag = stopFlag            #set flag to kill all thread associated to an agent 
         self.neighbourhood=neighbourhood

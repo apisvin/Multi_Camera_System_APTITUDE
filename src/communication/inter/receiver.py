@@ -81,9 +81,11 @@ class receiver():
 def put_on_queue(dictReceived, dicqueue):
     """
     Process the message and put it on the correct queue of the dicqueue in function of the method field
+    Args : 
+        dictReceived : the received dictionnary to put on the right queue
+        dicqueue : dicqueue class containing all queues
     """
     if(dictReceived["method"] == "init"):
-        #dictReceived["agent"]["ip"]=address[0]
         dicqueue.Qtoidentification.put(dictReceived)
 
     elif(dictReceived["method"] == "ackinit"):   

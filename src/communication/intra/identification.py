@@ -10,14 +10,15 @@ class identification:
     
     def __init__(self, stopFlag, neighbourhood, dicqueue):
         """
-        This class is associated to one agent. Its role is to discover and integrate other agent as neighbour to the class neighbourhood.
+        This class is associated to one agent. Its role is to discover and integrate other agent 
+        as neighbour to the class neighbourhood.
 
         Args : 
-            stopFlag : a flag to stop the thread running loop_identication
+            stopFlag : flag to stop executing thread 
             neighbourhood : a class containing all neighbours of the agent
-            dicqueue : a class containing all queues to transmits messages between threads 
+            dicqueue : distionnary containing queues for inter-thread communication
         """
-        self.stopFlag = stopFlag        #set flag to kill all thread associated to an agent 
+        self.stopFlag = stopFlag 
         self.dicqueue = dicqueue
         self.neighbourhood = neighbourhood
         
@@ -25,12 +26,6 @@ class identification:
         """
         loop to process the different messages received concerning the connections between agents
         """
-        """while(not self.neighbourhood.myself.DNS and self.stopFlag.is_set()==False): #envoyer des init jusqu a reception du ackinit
-            self.init()
-            if(not(self.dicqueue.Qtoidentification.empty())):
-                received = self.dicqueue.Qtoidentification.get()
-                if(received["method"]=="ackinit"):
-                    self.received_ackinit(received)"""
                     
         while self.stopFlag.is_set()==False:
             try:
@@ -68,7 +63,6 @@ class identification:
                 "method" : "init",
                 "spec" : {}}
         self.dicqueue.Qtosendbroadcast.put(msg)
-        #time.sleep(2) #wait response
         
     def ackinit(self, receptedmsg):
         """
@@ -77,7 +71,6 @@ class identification:
         """
         dictagent = receptedmsg["source"]
         newagent = neighbour.asdict(dictagent)
-        #logging.debug("init message is : {}".format(receptedmsg))
         #newagent is one level under and no DNS
         if(newagent.level + 1 == self.neighbourhood.myself.level
            and newagent.DNS == ""):
