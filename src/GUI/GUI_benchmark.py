@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 from utils.launcher import *
 import logging
 import time
@@ -30,6 +31,8 @@ class App(Tk):
         self.Qtosendunicast = Qtosendunicast
         self.Qtosendbroadcast = Qtosendbroadcast
 
+        self.delay = 0 #for synchronization in offline processing 
+
         self.title("Benchmark")
         self.geometry("500x800")
         #counter for row 
@@ -55,7 +58,7 @@ class App(Tk):
         type_label = ttk.Label(self, text="Agent type :")
         type_label.grid(row=r, column=0)
         r+=1
-        types = ("Detector", "Tracker", "VIVE", "evaluator", "Recorder", "Blank")
+        types = ("Detector", "OfflineDetector", "Tracker", "VIVE", "evaluator", "Recorder", "Blank")
         agenttype = StringVar()
         for t in types:
             rb = ttk.Radiobutton(
@@ -81,9 +84,27 @@ class App(Tk):
         spin_box.grid(row=r, column=0)
         r+=1
 
+        #folder for offline detector
+        folder = StringVar()
+
+        videopath_label = ttk.Label(self, text="select a forlder for offlinedetecor:")
+        videopath_label.grid(row=r, column=0)
+        r+=1
+        def select_folder():
+            path= filedialog.askdirectory()
+            folder.set(path)
+            print("selected folder = ", folder.get())
+        r+=1
+        
+
+        videopath_button = ttk.Button(self, text="Select a folder", command= select_folder)
+        videopath_button.grid(row=r, column=0)
+        r+=1
+        videopath_button.focus()
+
 
         #Button ADD
-        button = ttk.Button(self, text='Add agent',command=lambda : self.add_clicked(DNS_entry.get(), agenttype.get(), level.get()))
+        button = ttk.Button(self, text='Add agent',command=lambda : self.add_clicked(DNS_entry.get(), agenttype.get(), level.get(), folder.get()))
         button.grid(row=r, column=0)
         r+=1
         ###################################################
@@ -163,11 +184,11 @@ class App(Tk):
         
 
 
-    def add_clicked(self, DNS, agenttype, level):
+    def add_clicked(self, DNS, agenttype, level, folder=None):
         #create lauuncher in hardware manager 
-        l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager)
+        l = launcher(agenttype=str.lower(agenttype), level=int(level), DNS=DNS, Qtosendunicast=self.Qtosendunicast, Qtosendbroadcast=self.Qtosendbroadcast, QtoHardwareManager=self.hardware_manager.QtoHardwareManager, folder=folder, delay=self.delay)
         self.hardware_manager.add(l)
-        self.list_command.insert(END, ("ADD", agenttype, level, DNS, l.n.myself.hardwareID, self.lineID))
+        self.list_command.insert(END, ("ADD", agenttype, level, DNS, l.n.myself.hardwareID, self.lineID, folder))
         self.lineID+=1
         
 
@@ -189,6 +210,7 @@ class App(Tk):
             logging.warning("please type an integer for time interval.")
         else:
             self.list_command.insert(END, ("INTERVAL", int(interval)))
+            self.delay = self.delay + int(interval)
         self.lineID+=1
 
         

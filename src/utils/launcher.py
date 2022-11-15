@@ -11,6 +11,7 @@ from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
 from agent.detector import *
+from agent.offlineDetector import *
 from agent.tracker import *
 from agent.evaluator import *
 from agent.vive import *
@@ -29,7 +30,7 @@ class launcher:
     
     """
 
-    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager):
+    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager, folder=None, delay=None):
         """
         Launcher class represents a agent and start all of its threads 
         This class contains all the informatioin relative to the agent.
@@ -40,6 +41,8 @@ class launcher:
             Qtosendunicast : queue to send messages to sender_unicast
             Qtosendbroadcast : queue to send messages to sender_broadcast
             QtoHardwareManager : queue to send messages to the hardware_manager  
+            folder : a folder assigned for the agent. It can either access or safe data in this folder dependeing of its type
+            delay : for offline processing. Delay since beggining
         """
         self.stopFlag = threading.Event() #Set() the flag stops all threads 
         self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager) #to store all Queue's (communication between threads)
@@ -47,6 +50,8 @@ class launcher:
         myself.update_DNS(DNS)
         myself.generate_own_IP()
         self.n = neighbourhood(myself) #to store all neighbours
+        self.folder = folder
+        self.delay = delay 
         
     def launch(self):
         """
@@ -60,6 +65,8 @@ class launcher:
             pass
         elif(self.n.myself.agenttype == "detector"):
             self.launch_detection()
+        elif(self.n.myself.agenttype == "offlinedetector"):
+            self.launch_offlinedetection()
         elif(self.n.myself.agenttype == "tracker"):
             self.launch_tracker()
         elif(self.n.myself.agenttype == "evaluator"):
@@ -103,6 +110,15 @@ class launcher:
         (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
         
         d = Detector(self.stopFlag, self.n, self.dicqueue,calib, True)
+        threading.Thread(target=d.launch, args=()).start()
+
+    def launch_offlinedetection(self):
+        """
+        Procedure to start offlinedetection task. First, the camera has to be calibrated. From a image file 
+        containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
+        Then, the processing loop of the detector is launched.
+        """
+        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.delay, False)
         threading.Thread(target=d.launch, args=()).start()
         
     def launch_tracker(self):

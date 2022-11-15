@@ -1,6 +1,7 @@
 # local data for each hardware
 src/local_data/
 results/
+src/offline processing
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
