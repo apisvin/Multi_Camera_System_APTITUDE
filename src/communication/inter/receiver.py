@@ -69,6 +69,9 @@ class receiver():
                     launcher_evaluate = self.hardware_manager.get_evaluate()
                     if launcher_evaluate!=-1:
                         put_on_queue(dictReceived, launcher_evaluate.dicqueue)
+                    launcher_vive = self.hardware_manager.get_vive()
+                    if launcher_vive!=-1:
+                        put_on_queue(dictReceived, launcher_vive.dicqueue)
                 else:
                     #chercher la bonne dicqueue dans manager_hardware
                     dicqueue = self.hardware_manager.get_dicqueue(dictReceived["destination"]["hardwareID"])
