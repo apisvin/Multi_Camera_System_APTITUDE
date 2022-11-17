@@ -1,0 +1,7 @@
+---
+
+- hosts: all
+  tasks:
+
+  - name: Run Python script
+    command: python3 /home/pi/Multi_Camera_System_APTITUDE/src/main.py

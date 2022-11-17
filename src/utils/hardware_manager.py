@@ -250,6 +250,15 @@ class hardware_manager:
             if l.n.myself.agenttype=="evaluate":
                 return l
         return -1
+    
+    def get_vive(self):
+        """
+        return a vive class that correspond to a vive agent 
+        """
+        for l in self.launchers.values():
+            if l.n.myself.agenttype=="vive":
+                return l
+        return -1
         
     
 

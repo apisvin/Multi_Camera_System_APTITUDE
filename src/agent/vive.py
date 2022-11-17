@@ -17,10 +17,13 @@ class Vive(Agent):
         self.dicqueue = dicqueue
         
     def launch(self):
-        with open("/home/pi/Multi_Camera_System_APTITUDE/local_data/VIVE.csv", "w", newline="") as df:
+        with open("/home/pi/Multi_Camera_System_APTITUDE/results/VIVE.csv", "w", newline="") as df:
             header = ["x", "y", "time"]
             writer = csv.DictWriter(df, fieldnames=header)
             writer.writeheader()
+            #purge queue
+            while not self.dicqueue.QtoVIVE.empty():
+                self.dicqueue.QtoVIVE.get(block=False)
             while self.stopFlag.is_set()==False:
                 try:
                     msg = self.dicqueue.QtoVIVE.get(timeout=1)
