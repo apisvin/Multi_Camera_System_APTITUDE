@@ -61,7 +61,7 @@ def launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast):
     threading.Thread(target=hardware_manager.hardware_manager, args=()).start()
 
 def wait_as_slave():
-    blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = self.Qtosendunicast, Qtosendbroadcast = self.Qtosendbroadcast, QtoHardwareManager = self.hardware_manager.QtoHardwareManager)
+    blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = hardware_manager.QtoHardwareManager)
     hardware_manager.add(blank_l)
     threading.Thread(target=blank_l.launch, args=()).start()
     #wait for message
@@ -77,26 +77,19 @@ def wait_as_slave():
     hardware_manager.QtoHardwareManager.put(msgremove)
 
 def begin_master():
-    blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = self.Qtosendunicast, Qtosendbroadcast = self.Qtosendbroadcast, QtoHardwareManager = self.hardware_manager.QtoHardwareManager)
-    #self.hardware_manager.add(blank_l)
-    #threading.Thread(target=blank_l.launch, args=()).start()
+    blank_l = launcher(agenttype="blank", level=0, DNS="blankdns", Qtosendunicast = Qtosendunicast, Qtosendbroadcast = Qtosendbroadcast, QtoHardwareManager = hardware_manager.QtoHardwareManager)
     msg = {"source" : blank_l.n.myself.__dict__,
             "destination" : "all_agent",
             "method" : "benchmark",
             "spec" :""}
     Qtosendbroadcast.put(msg)
-    msgremove = {"source" : "benchmarck",
-            "destination" : "hardware_manager",
-            "method" : "remove",
-            "spec" : {"hardwareID" : blank_l.n.myself.hardwareID}}
-    hardware_manager.QtoHardwareManager.put(msgremove)
 
 def main():
     launch_hardware_com(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     
     # launch a recorder agent as slave hardware
-    slave = True
+    slave = False
     testTime = 5*60 #[s]
 
     if slave:
@@ -109,7 +102,7 @@ def main():
     hardware_manager.add(l)
     threading.Thread(target=l.launch, args=()).start()
     #wait during testTime
-    print("wait {} s".format(line[1]))
+    print("wait {} s".format(testTime))
     time.sleep(testTime)
     #stop
     msg = {"source" : "main",
