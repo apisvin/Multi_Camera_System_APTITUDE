@@ -30,7 +30,7 @@ class launcher:
     
     """
 
-    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager, folder=None, delay=None):
+    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager, folder=None, t_b=None):
         """
         Launcher class represents a agent and start all of its threads 
         This class contains all the informatioin relative to the agent.
@@ -42,7 +42,7 @@ class launcher:
             Qtosendbroadcast : queue to send messages to sender_broadcast
             QtoHardwareManager : queue to send messages to the hardware_manager  
             folder : a folder assigned for the agent. It can either access or safe data in this folder dependeing of its type
-            delay : for offline processing. Delay since beggining
+            t_b : time from time.time() when the benchmark is launched
         """
         self.stopFlag = threading.Event() #Set() the flag stops all threads 
         self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager) #to store all Queue's (communication between threads)
@@ -51,7 +51,7 @@ class launcher:
         myself.generate_own_IP()
         self.n = neighbourhood(myself) #to store all neighbours
         self.folder = folder
-        self.delay = delay 
+        self.t_b = t_b 
         
     def launch(self):
         """
@@ -118,7 +118,7 @@ class launcher:
         containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
         Then, the processing loop of the detector is launched.
         """
-        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.delay, False)
+        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.t_b)
         threading.Thread(target=d.launch, args=()).start()
         
     def launch_tracker(self):

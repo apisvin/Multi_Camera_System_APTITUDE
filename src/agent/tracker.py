@@ -11,7 +11,7 @@ from agent.agent import Agent
 
 class Tracker(Agent):
     
-    def __init__(self, stopFlag, neighbourhood, dicqueue, display = True):
+    def __init__(self, stopFlag, neighbourhood, dicqueue, display = False, save=True):
         """
         Tracker is the traking agent. It receives the detection in 3D coordinate in the global frame and 
         fusions all the detection. The fusion is implemented as a Kalman filter.
@@ -20,9 +20,11 @@ class Tracker(Agent):
             neighbourhood : a class containing all neighbours of the agent
             dicqueue : distionnary containing queues for inter-thread communication
             display : boolean for displaying in a window the occupancy map of targets
+            save : boolean for saving data
         """
         self.stopFlag = stopFlag
         self.display = display
+        self.save = save
         self.neighbourhood = neighbourhood 
         self.dicqueue = dicqueue
         self.dictracker = {} #dictionnary to manage all targets
@@ -39,6 +41,11 @@ class Tracker(Agent):
         #create thread if display variable 
         if(self.display):
             threading.Thread(target=self.launch_plot, args=()).start()
+
+        if self.save:
+            x_save = []
+            y_save = []
+            time_save = []
         #begin the loop
         while self.stopFlag.is_set()==False:
             try:
@@ -58,6 +65,7 @@ class Tracker(Agent):
                     position = detobject["position"]
                     px = position["x"]
                     py = position["y"]
+                    time = detobject["time"]
                     
                     if str(classID) in self.dictracker:
                         #if the received target is know, process the observation in kalman filter
@@ -71,6 +79,11 @@ class Tracker(Agent):
                     if self.display:
                         #send the new estimate of the position to plot 
                         self.Qtoplot.put([x, y, ID])
+
+                    if self.save:
+                        x_save.append(x)
+                        y_save.append(y)
+                        time_save.append(time)
                     
                     if self.neighbourhood.parent != 0:
                         #if a parent is known, send the estimate
@@ -86,6 +99,16 @@ class Tracker(Agent):
                 #the except catch the error from the get(timeout)
                 #This operation is necesssary to avoid the blocking property of the get() method
                 pass
+        if self.save:
+            header = ["x", "y", "time"]       
+            with open("C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/tracks.csv", "w") as df:
+                #write all detections in a single csv file
+                trackWriter = csv.DictWriter(df, fieldnames=header)
+                trackWriter.writeheader()
+                for i in range(len(x_save)):
+                    trackWriter.writerow({"x": x_save[i],
+                                            "y": y_save[i],
+                                            "time" : time_save[i]})
         logging.debug("tracker stopped")
         
 
