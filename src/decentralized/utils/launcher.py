@@ -67,7 +67,7 @@ class launcher:
         elif(self.n.myself.agenttype == "offlinedecentralized"):
             self.launch_offlineDecentralized()
         elif(self.n.myself.agenttype == "decentralized"):
-            self.launch_offlineDecentralized()
+            self.launch_decentralized()
         
 
     
