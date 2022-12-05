@@ -1,7 +1,7 @@
 # local data for each hardware
 src/local_data/
 results/
-src/offline processing
+offline processing/
 local_data/
 
 # Byte-compiled / optimized / DLL files
