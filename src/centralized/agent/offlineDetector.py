@@ -10,7 +10,7 @@ import csv
 
 class OfflineDetector(Agent):
     
-    def __init__(self, stopFlag, neighbourhood, dicqueue, folder, delay, display=False):
+    def __init__(self, stopFlag, neighbourhood, dicqueue, folder, t_b, display=True):
         """
         Detector is a detection agent. It has to process the video from camera in real time 
         or from a video file. It detects Aruco marker and return their coordinate at each frame in a
@@ -23,7 +23,7 @@ class OfflineDetector(Agent):
                                     the video file to read 
                                     the image calibration corresponding to this video
                                     the time_video (.csv) containg the time stamp of each frame 
-            delay : delay [s] to make since begging of video
+            t_b : time in seconds since epoch when the benchmark is launched
             display : boolean for displaying in a window the current video (in real time from camera or from video)
         """
         self.stopFlag= stopFlag
@@ -33,7 +33,7 @@ class OfflineDetector(Agent):
         if folder == None:
             logging.warning("please give a video path to offline detector")
         self.folder = folder
-        self.delay = delay
+        self.t_b = t_b
         
     def launch(self):
         """
@@ -64,7 +64,8 @@ class OfflineDetector(Agent):
             logging.warning("please give a valid video path to offline detector")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        cv2.namedWindow(self.folder, cv2.WINDOW_FULLSCREEN)
+        if self.display:
+            cv2.namedWindow(self.folder, cv2.WINDOW_FULLSCREEN)
         
         Zoffset = 10
         # Loop for detection timestamp
@@ -74,11 +75,12 @@ class OfflineDetector(Agent):
             for row in readerTime:
                 time_video.append(float(row["time"]))
         time_video = np.array(time_video)
-        time_video = time_video-time_video[0] #begin at zero sec
+        time_reset = time_video-time_video[0] #begin at zero sec
+        time_video_now = time_reset+self.t_b #time vector translated now 
 
         #set frame number depending on delay
-        frame_number = np.searchsorted(time_video, float(self.delay))
-        
+        delay = time.time()-self.t_b
+        frame_number = np.searchsorted(time_reset, float(delay))
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
 
         #aruco parameters
@@ -89,8 +91,6 @@ class OfflineDetector(Agent):
         ret, frame = cap.read()
         start = time.time()
         while ret==True and self.stopFlag.is_set()==False:
-            
-            begin_det = time.time()
             #ArUco marker detection from frame
             (corners, ids, rejected) = cv2.aruco.detectMarkers(frame, arucoDict,parameters=arucoParams)
             #corners: A list containing the (x, y)-coordinates of our detected ArUco markers
@@ -130,7 +130,8 @@ class OfflineDetector(Agent):
                                 "z" : float(point3D.z)}
                     detobject = {"objectID" : objectID,
                                  "classID" : classID,
-                                 "position" : position}
+                                 "position" : position,
+                                 "time" : time_video[frame_number]}
                     objects.append(detobject)
             
             
@@ -148,19 +149,18 @@ class OfflineDetector(Agent):
 
             
             if(frame_number>= time_video.size-1):
+                #last frame
                 break
-            delta_frame = time_video[frame_number+1]-time_video[frame_number]
-            end_det = time.time()
-
             
             #wait time between two frames
-            cv2.waitKey(int(delta_frame*1000-(end_det-begin_det)*1000))
+            while time.time() <= time_video_now[frame_number+1]:
+                cv2.waitKey(1)
             #capture new frame
             ret, frame = cap.read()
             frame_number+=1
             
         logging.debug("total time of detector offline = {} s".format(time.time()-start))
         cap.release()
-        cv2.destroyAllWindows()
+        cv2.destroyWindow(self.folder)
     
 

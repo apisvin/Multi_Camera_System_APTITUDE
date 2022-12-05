@@ -6,14 +6,14 @@ import sys
 import select
 from communication.inter.sender import *
 from communication.inter.receiver import *
-from communication.intra.identification import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
 from agent.detector import *
 from agent.offlineDetector import *
+from agent.offlineDecentralized import *
+from agent.decentralized import *
 from agent.tracker import *
-from agent.evaluator import *
 from agent.vive import *
 from agent.recorder import *
 from calibration.calibrate import *
@@ -30,28 +30,25 @@ class launcher:
     
     """
 
-    def __init__(self, agenttype, level, DNS, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager, folder=None, delay=None):
+    def __init__(self, agenttype, Qtosendunicast, Qtosendbroadcast, QtoHardwareManager, folder=None, t_b=None):
         """
         Launcher class represents a agent and start all of its threads 
         This class contains all the informatioin relative to the agent.
         Args : 
             agenttype : string specifiing the type of agent
-            level : level in which the agent is in the hierarchy
-            DNS : string representing the DNS of the agent
             Qtosendunicast : queue to send messages to sender_unicast
             Qtosendbroadcast : queue to send messages to sender_broadcast
             QtoHardwareManager : queue to send messages to the hardware_manager  
             folder : a folder assigned for the agent. It can either access or safe data in this folder dependeing of its type
-            delay : for offline processing. Delay since beggining
+            t_b : time from time.time() when the benchmark is launched
         """
         self.stopFlag = threading.Event() #Set() the flag stops all threads 
         self.dicqueue = dicqueue(Qtosendunicast, Qtosendbroadcast, QtoHardwareManager) #to store all Queue's (communication between threads)
-        myself = neighbour(ip="", agenttype=agenttype, level=level) #to know all paramters of myself as neighbour
-        myself.update_DNS(DNS)
+        myself = neighbour(ip="", agenttype=agenttype) #to know all paramters of myself as neighbour
         myself.generate_own_IP()
         self.n = neighbourhood(myself) #to store all neighbours
         self.folder = folder
-        self.delay = delay 
+        self.t_b = t_b 
         
     def launch(self):
         """
@@ -60,29 +57,24 @@ class launcher:
         and process them.
         Then, in function of the agent type, it launchs the specific task correspong to the agent.
         """
-        self.launch_identification()
+        self.launch_watcher()
         if(self.n.myself.agenttype == "blank"):
             pass
-        elif(self.n.myself.agenttype == "detector"):
-            self.launch_detection()
-        elif(self.n.myself.agenttype == "offlinedetector"):
-            self.launch_offlinedetection()
-        elif(self.n.myself.agenttype == "tracker"):
-            self.launch_tracker()
-        elif(self.n.myself.agenttype == "evaluator"):
-            self.launch_evaluate()
         elif(self.n.myself.agenttype == "recorder"):
             self.launch_recorder()
         elif(self.n.myself.agenttype == "vive"):
             self.launch_VIVE()
+        elif(self.n.myself.agenttype == "offlinedecentralized"):
+            self.launch_offlineDecentralized()
+        elif(self.n.myself.agenttype == "decentralized"):
+            self.launch_offlineDecentralized()
+        
 
     
-    def launch_identification(self):
+    def launch_watcher(self):
         """
-        Procedure to start identification thread and three threads of watcher
+        Procedure to start three threads of watcher
         """
-        i = identification(self.stopFlag, self.n, self.dicqueue)
-        threading.Thread(target=i.loop_identification, args=()).start()
         #add watcher to deal with missing agent
         w = watcher(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=w.receive_alive, args=()).start()
@@ -118,22 +110,9 @@ class launcher:
         containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
         Then, the processing loop of the detector is launched.
         """
-        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.delay, False)
+        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.t_b)
         threading.Thread(target=d.launch, args=()).start()
         
-    def launch_tracker(self):
-        """
-        Procedure to start the tracking task. It create the Tracker and start the processing loop.
-        """
-        t = Tracker(self.stopFlag, self.n, self.dicqueue)
-        threading.Thread(target=t.launch, args=()).start()
-        
-    def launch_evaluate(self):
-        """
-        Procedure to start the evaluating task. It create the Evaluator and start the processing loop.
-        """
-        e = Evaluator(self.stopFlag, self.n, self.dicqueue)
-        threading.Thread(target=e.launch, args=()).start()
         
     def launch_recorder(self):
         """
@@ -148,3 +127,11 @@ class launcher:
         """
         v = Vive(self.stopFlag, self.dicqueue)
         threading.Thread(target=v.launch, args=()).start()
+
+    def launch_offlineDecentralized(self):
+        o = OfflineDecentralized(self.stopFlag, self.n, self.dicqueue, self.folder, self.t_b)
+        threading.Thread(target=o.launch, args=()).start()
+
+    def launch_decentralized(self):
+        d = decentralized(self.stopFlag, self.n, self.dicqueue)
+        threading.Thread(target=d.launch, args=()).start()
