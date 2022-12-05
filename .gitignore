@@ -2,6 +2,8 @@
 src/local_data/
 results/
 src/offline processing
+local_data/
+.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
