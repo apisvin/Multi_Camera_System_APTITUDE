@@ -9,11 +9,8 @@ from communication.inter.receiver import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
-from agent.detector import *
-from agent.offlineDetector import *
 from agent.offlineDecentralized import *
 from agent.decentralized import *
-from agent.tracker import *
 from agent.vive import *
 from agent.recorder import *
 from calibration.calibrate import *

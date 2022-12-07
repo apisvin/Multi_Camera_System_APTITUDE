@@ -83,8 +83,7 @@ class decentralized(Agent):
 
     def detection_localKF(self):
         #create calib class from calibration image 
-        #image = cv2.imread('../../local_data/image_calibration.png')
-        image = cv2.imread('src/decentralized/image_calibration.png')
+        image = cv2.imread('../../local_data/image_calibration.png')
         aruco_3D = np.array([[0.,0.,0.],
                         [100.,0.,0.],
                         [0.,100.,0.],
