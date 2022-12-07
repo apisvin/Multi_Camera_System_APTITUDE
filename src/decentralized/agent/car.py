@@ -27,7 +27,7 @@ class car(Agent):
     def launch(self):
         #INSERT HERE CODE OF CAR
         while self.stopFlag.is_set()==False:
-            msg = self.dicqueue.get()
+            msg = self.dicqueue.Qtocar.get()
             print(msg)
 
 

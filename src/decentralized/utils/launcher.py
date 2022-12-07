@@ -11,6 +11,7 @@ from utils.neighbourhood import *
 from utils.dicqueue import *
 from agent.offlineDecentralized import *
 from agent.decentralized import *
+from agent.car import *
 from agent.vive import *
 from agent.recorder import *
 from calibration.calibrate import *
@@ -65,9 +66,10 @@ class launcher:
             self.launch_offlineDecentralized()
         elif(self.n.myself.agenttype == "decentralized"):
             self.launch_decentralized()
+        elif(self.n.myself.agenttype == "car"):
+            self.launch_car()
         
 
-    
     def launch_watcher(self):
         """
         Procedure to start three threads of watcher
@@ -77,39 +79,6 @@ class launcher:
         threading.Thread(target=w.receive_alive, args=()).start()
         threading.Thread(target=w.send_alive, args=()).start()
         threading.Thread(target=w.check_age, args=()).start()
-
-    def launch_detection(self):
-        """
-        Procedure to start detection task. First, the camera has to be calibrated. From a image file 
-        containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
-        Then, the processing loop of the detector is launched.
-        """
-        #calibration
-        image = cv2.imread('/home/pi/Multi_Camera_System_APTITUDE/local_data/image_calibration.png')
-        aruco_3D = np.array([[0.,0.,0.],
-                            [100.,0.,0.],
-                            [0.,100.,0.],
-                            [-100.,0.,0.],
-                            [0.,-100.,0.],
-                            [100.,100.,0.],
-                            [-100.,100.,0.],
-                            [-100.,-100.,0.],
-                            [100.,-100.,0.]], dtype='float32')
-        ids_3D = np.array([0,10,12,14,16,18,20,22,24])
-        (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
-        
-        d = Detector(self.stopFlag, self.n, self.dicqueue,calib, True)
-        threading.Thread(target=d.launch, args=()).start()
-
-    def launch_offlinedetection(self):
-        """
-        Procedure to start offlinedetection task. First, the camera has to be calibrated. From a image file 
-        containing a picture of 9 aruco markers at specific coordinate, the Calib class is created.
-        Then, the processing loop of the detector is launched.
-        """
-        d = OfflineDetector(self.stopFlag, self.n, self.dicqueue, self.folder, self.t_b)
-        threading.Thread(target=d.launch, args=()).start()
-        
         
     def launch_recorder(self):
         """
@@ -132,3 +101,7 @@ class launcher:
     def launch_decentralized(self):
         d = decentralized(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=d.launch, args=()).start()
+
+    def launch_car(self):
+        c = car(self.stopFlag, self.n, self.dicqueue)
+        threading.Thread(target=c.launch, args=()).start()
