@@ -21,6 +21,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 # DEBUG < INFO < WARNING < ERROR < CRITICAL
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("aptitude-toolbox").setLevel(logging.WARNING)
 
 Qtosendunicast, Qtosendbroadcast, QtoHardwareManager = Queue(), Queue(), Queue()
 hardware_manager = hardware_manager(QtoHardwareManager, Qtosendunicast, Qtosendbroadcast)

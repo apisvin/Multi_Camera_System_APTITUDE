@@ -4,11 +4,13 @@ Licensed under GPL-3.0 [see LICENSE for details]
 Written by Jonathan Samelson (2021-2022)
 """
 
+from pytb.output.detection import Detection
+
 import numpy as np
 import cv2
 
 
-class BBoxes2D():
+class BBoxes2D(Detection):
 
     def __init__(self, detection_time: float,
                  bboxes: np.array, class_IDs: np.array, det_confs: np.array,
@@ -32,7 +34,8 @@ class BBoxes2D():
             bboxes_format (str): Either "xt_yt_w_h" (default) or "x1_y1_x2_y2"
                 depending on the format of 'bboxes'.
         """
-        self.number_objects = 0 if bboxes is None else len(bboxes)
+        number_objects = 0 if bboxes is None else len(bboxes)
+        super().__init__(number_objects=number_objects)
 
         self.detection_time = detection_time
 

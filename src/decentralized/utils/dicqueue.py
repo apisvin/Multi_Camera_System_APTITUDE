@@ -28,6 +28,7 @@ class dicqueue:
         self.Qtoeval =              Queue()
         self.Qtobenchmark =         Queue()
         self.QtoglobalKF =          Queue()
+        self.Qtocar =               Queue()
         
     def length(self):
         """

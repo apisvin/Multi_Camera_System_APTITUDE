@@ -3,12 +3,15 @@ import numpy as np
 from calib3d import Point3D, Point2D
 import time
 import logging
-from agent.output.bboxes_2d import *
 from agent.agent import Agent
 from calibration.calibrate import find_calib
 import csv
 import threading
 from filterpy.kalman import KalmanFilter
+from pytb.detection.detection_manager import DetectionManager
+from pytb.detection.detector_factory import DetectorFactory
+from pytb.tracking.tracker_factory import TrackerFactory
+from  pytb.tracking.tracking_manager import TrackingManager
 
 
 
@@ -63,11 +66,6 @@ class decentralized(Agent):
             stopFlag : flag to stop executing thread 
             neighbourhood : a class containing all neighbours of the agent
             dicqueue : distionnary containing queues for inter-thread communication
-            folder : absolute path to the folder containing :
-                                    the video file to read 
-                                    the image calibration corresponding to this video
-                                    the time_video (.csv) containg the time stamp of each frame 
-            t_b : time in seconds since epoch when the benchmark is launched
             display : boolean for displaying in a window the current video (in real time from camera or from video)
         """
         self.stopFlag= stopFlag
@@ -85,7 +83,8 @@ class decentralized(Agent):
 
     def detection_localKF(self):
         #create calib class from calibration image 
-        image = cv2.imread('../../local_data/image_calibration.png')
+        #image = cv2.imread('../../local_data/image_calibration.png')
+        image = cv2.imread('src/decentralized/image_calibration.png')
         aruco_3D = np.array([[0.,0.,0.],
                         [100.,0.,0.],
                         [0.,100.,0.],
@@ -98,6 +97,26 @@ class decentralized(Agent):
         ids_3D = np.array([0,10,12,14,16,18,20,22,24])
         (calib, _) = find_calib(image, aruco_3D, ids_3D, nb_aruco=9, verbose=False)
 
+        #initializing detector 
+        config_aruco = {
+            "proc":{
+                "task": "detection",
+                "output_type": "bboxes2D",
+                "model_type": "Aruco",
+                "pref_implem": "",
+                "params": {}
+            },
+            "preproc":{},
+            "postproc":{}
+        }
+        detect1_proc = config_aruco['proc']
+        detect1_preproc = config_aruco['preproc']
+        detect1_postproc = config_aruco['postproc']
+
+        # Instantiate the detector
+        detection_manager = DetectionManager(DetectorFactory.create_detector(detect1_proc), detect1_preproc,
+                                            detect1_postproc)
+
 
         # Sizing frames
         width = 1920
@@ -105,6 +124,7 @@ class decentralized(Agent):
         cap = cv2.VideoCapture(-1)
         if not cap.isOpened():
             logging.warning("Capture object not initialized correctly")
+            return
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         if self.display:
@@ -118,75 +138,44 @@ class decentralized(Agent):
         ret, frame = cap.read()
         start = time.time()
         while ret==True and self.stopFlag.is_set()==False:
-            ##################################################Detection step
-            #ArUco marker detection from frame
-            (corners, ids, rejected) = cv2.aruco.detectMarkers(frame, arucoDict,parameters=arucoParams)
-            #corners: A list containing the (x, y)-coordinates of our detected ArUco markers
-            #ids : The ArUco IDs of the detected markers
-            
-            #buffer to keep all objects 
+            ####################################################detection in camera coordinate 
+            det = detection_manager.detect(frame)
+            det.change_dims(width, height)
+            det.to_x1_y1_x2_y2()
+            det_time = time.time()
+
+            #####################################################local Kalman filter
             objects = []
-            i=0
-            
-            #ArUco detection
-            if(ids is not None):
-                ids = ids.flatten()
-                for (markerCorner, markerID) in zip(corners, ids):
-                    # extract the marker corners (which are always returned in
-                    # top-left, top-right, bottom-right, and bottom-left order)
-                    corners2D = markerCorner.reshape((4, 2))
-                    #corners2D = (topLeft, topRight, bottomRight, bottomLeft)
-                    
-                    #get center of aruco marker
-                    center_pos_x = (corners2D[0][0]+corners2D[1][0]+corners2D[2][0]+corners2D[3][0])/4
-                    center_pos_y = (corners2D[0][1]+corners2D[1][1]+corners2D[2][1]+corners2D[3][1])/4
-                            
-
-                    #draw detection point on 2D frame
-                    i+=1
-                    position = (int(center_pos_x), int(center_pos_y))
-                    positionText = (int(center_pos_x), int(center_pos_y)-15)
-                    cv2.circle(frame, position, 12, (0, 0, 255), -1)
-                    cv2.putText(frame, "Object_aruco_"+str(i), positionText, cv2.FONT_HERSHEY_DUPLEX, 3, (0, 0, 255), 2, cv2.LINE_AA) 
-                
-                    # dictionnary for detected object
-                    point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
-                    objectID = int(markerID)
-                    classID = "aruco"
-                    position = {"x" : float(point3D.x),
-                                "y" : float(point3D.y),
-                                "z" : float(point3D.z)}
-                    detobject = {"objectID" : objectID,
-                                 "classID" : classID,
-                                 "position" : position,
-                                 "time" : time.time()}
-                    objects.append(detobject)
-
-            ####################################################Local Kalman
-            if(len(objects)>0):
-                for o in objects:
-                    #perform local kalman filter
-                    local_x, local_y = self.local_KF.process_kalman(float(o["position"]["x"]), float(o["position"]["y"]), float(o["time"]))
-                    #send prediction from local KF to global kalman filter
-                    msg = {"source" : self.neighbourhood.myself.__dict__,
+            for bb in det.bboxes:
+                center_pos_x = (bb[0]+bb[2])/2
+                center_pos_y = (bb[1]+bb[3])/2
+                #tranformation to global coordinate
+                point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
+                #perform local kalman filter
+                local_x, local_y = self.local_KF.process_kalman(float(point3D.x), float(point3D.y), det_time)
+                #send prediction from local KF to global kalman filter
+                msg = {"source" : self.neighbourhood.myself.__dict__,
                         "destination" : "my_globalKF",
                         "method" : "localKF",
                         "spec" : {"local_x" : local_x,
                                         "local_y" : local_y, 
-                                        "local_time" : float(o["time"])}}
-                    self.dicqueue.QtoglobalKF.put(msg)
-                    #send prediction from local KF to all neighbour's global kalman filter
-                    for neighbour in self.neighbourhood.get_all_neighbours():
-                        msg = {"source" : self.neighbourhood.myself.__dict__,
-                        "destination" : neighbour.__dict__,
-                        "method" : "localKF",
-                        "spec" : {"local_x" : local_x,
-                                        "local_y" : local_y, 
-                                        "local_time" : float(o["time"])}}
-                        self.dicqueue.Qtosendunicast.put(msg)
+                                        "local_time" : det_time}}
+                self.dicqueue.QtoglobalKF.put(msg)
+                #send prediction from local KF to all neighbour's global kalman filter
+                for neighbour in self.neighbourhood.get_all_neighbours():
+                    msg = {"source" : self.neighbourhood.myself.__dict__,
+                    "destination" : neighbour.__dict__,
+                    "method" : "localKF",
+                    "spec" : {"local_x" : local_x,
+                                    "local_y" : local_y, 
+                                    "local_time" : det_time}}
+                    self.dicqueue.Qtosendunicast.put(msg)
             
             ####################################################Display video
             if self.display:
+                for bb in det.bboxes:
+                    #scv2.circle(frame, position, 12, (0, 0, 255), -1)
+                    cv2.rectangle(frame, (bb[0], bb[1]), (bb[2], bb[3]),(0, 0, 255), 12)
                 frameResized = cv2.resize(frame, (960,540))
                 cv2.imshow("result", frameResized)
                 cv2.waitKey(1)
@@ -209,9 +198,14 @@ class decentralized(Agent):
             local_time = msg["spec"]["local_time"]
             global_x, global_y = self.global_KF.process_kalman(local_x, local_y, local_time)
 
-            #################################################Send global estimate to car 
-            msg = {"x" : global_x,
-                    "y" : global_y}
-            logging.debug("car localisation is : {}".format(msg))
+            #################################################Send global estimate  
+            for car in self.neighbourhood.get_cars():
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                        "destination" : car.__dict__,
+                        "method" : "positionCar",
+                        "spec" : {"x" : global_x,
+                        "y" : global_y}}
+                logging.debug("car localisation is : {}".format(msg))
+                self.dicqueue.Qtosendunicast(msg)
                             
 

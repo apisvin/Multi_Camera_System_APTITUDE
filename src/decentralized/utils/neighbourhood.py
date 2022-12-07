@@ -63,4 +63,16 @@ class neighbourhood:
             if c.ip not in existing_ip and c.ip != self.myself.ip:
                 ret.append(c.__dict__)
         return ret
+
+    def get_cars(self):
+        """
+        return a list of neighbours with agenttype is "car"
+        """
+        cars = []
+        self.lockCluster.acquire()
+        for c in self.cluster:
+            if c.agenttype == "car":
+                cars.append(c)
+        self.lockCluster.release()
+        return cars
     

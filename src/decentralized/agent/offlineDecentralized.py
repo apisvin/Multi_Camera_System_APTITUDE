@@ -3,7 +3,6 @@ import numpy as np
 from calib3d import Point3D, Point2D
 import time
 import logging
-from agent.output.bboxes_2d import *
 from agent.agent import Agent
 from calibration.calibrate import find_calib
 import csv
