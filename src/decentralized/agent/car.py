@@ -66,35 +66,37 @@ class car(Agent):
                     "G" : (-0.5, -0.5),
                     "H" : (-0.5, 0.0),
                     "I" : (-0.5, 0.5)}
+        absolutePos = [0,0]
+        theta = 0
         while self.stopFlag.is_set()==False:
             objectivePos = position[actual_target]
+            last_pos = absolutePos
             # Compute position and error 
             try:
-                msg = self.dicqueue.Qtocar.get(timeout = 0.5)
+                msg = self.dicqueue.Qtocar.get(block=False)
                 #information about position from cameras 
-                absolutePos = [ float(msg["spec"]["x"]), float(msg["spec"]["y"]) ]
-                #reset odometers variable 
+                absolutePos = [ float(msg["spec"]["x"])/100, float(msg["spec"]["y"])/100 ]
+                if absolutePos != last_pos:
+                    theta = np.arctan2( (absolutePos[1]-last_pos[1]) / (absolutePos[0]-last_pos[0]))
                 self.odos.update() #to update theta
-
-                self.odos.x = absolutePos[0]
-                self.odos.y = absolutePos[1]
             except:
                 #no information from camers -> take odometers 
                 self.odos.update()
                 absolutePos = [self.odos.x, self.odos.y]
+                theta = self.odos.theta
             
             errX = objectivePos[0] - absolutePos[0]
             errY = objectivePos[1] - absolutePos[1]
 
             # Compute wheel speed and apply it
-            (omegaLeft, omegaRight) = compute_speed(errX, errY,self.odos.theta)
+            (omegaLeft, omegaRight) = compute_speed(errX, errY,theta)
             self.encs.update()
             self.motLeft.set_objective_speed(self.encs.omegaL, omegaLeft)
             self.motRight.set_objective_speed(self.encs.omegaR, omegaRight)
 
             # Compute distance to target and fetch next one
             d = (errX)**2 + (errY)**2
-            if d < 0.0025:
+            if d < 0.10:
                 # TODO compute dijkstra after modifying the gra^ph with obstacle avoidance
                 dijkstra = DijkstraSPF(self.graph, actual_target)
                 previous_target = dijkstra.get_path(final_target)[0]
