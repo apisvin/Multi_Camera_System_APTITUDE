@@ -32,7 +32,7 @@ class Aruco(BBoxes2DDetector):
         #ids : The ArUco IDs of the detected markers
 
         bboxes = []
-
+        class_IDs = []
         #ArUco detection
         if(ids is not None):
             ids = ids.flatten()
@@ -44,7 +44,9 @@ class Aruco(BBoxes2DDetector):
                 x, y, w, h = cv2.boundingRect(corners2D)
                 
                 bboxes.append([x, y, w, h])
+                class_IDs.append(markerID)
+                
         end = default_timer()
 
-        return BBoxes2D(end-start, np.array(bboxes), np.zeros(len(bboxes)).astype(int),
+        return BBoxes2D(end-start, np.array(bboxes), np.array(class_IDs).astype(int),
                     np.ones(len(bboxes)), frame.shape[1], frame.shape[0])
