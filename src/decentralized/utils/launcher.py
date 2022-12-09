@@ -9,12 +9,6 @@ from communication.inter.receiver import *
 from communication.intra.watcher import *
 from utils.neighbourhood import *
 from utils.dicqueue import *
-from agent.offlineDecentralized import *
-from agent.decentralized import *
-from agent.car import *
-from agent.vive import *
-from agent.recorder import *
-from calibration.calibrate import *
 import logging
 
 
@@ -84,6 +78,7 @@ class launcher:
         """
         Procedure to start the recording task. It create the Recorder and start the processing loop.
         """
+        from agent.recorder import Recorder
         r = Recorder(self.stopFlag, self.dicqueue)
         threading.Thread(target=r.launch, args=()).start()
         
@@ -91,17 +86,21 @@ class launcher:
         """
         Procedure to start the vive task. It create the Vive and start the processing loop.
         """
+        from agent.vive import Vive
         v = Vive(self.stopFlag, self.dicqueue)
         threading.Thread(target=v.launch, args=()).start()
 
     def launch_offlineDecentralized(self):
+        from agent.offlineDecentralized import OfflineDecentralized
         o = OfflineDecentralized(self.stopFlag, self.n, self.dicqueue, self.folder, self.t_b)
         threading.Thread(target=o.launch, args=()).start()
 
     def launch_decentralized(self):
+        from agent.decentralized import decentralized
         d = decentralized(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=d.launch, args=()).start()
 
     def launch_car(self):
+        from agent.car import car
         c = car(self.stopFlag, self.n, self.dicqueue)
         threading.Thread(target=c.launch, args=()).start()
