@@ -66,7 +66,7 @@ def main():
     launch_hardware_manager(hardware_manager, Qtosendunicast, Qtosendbroadcast)
     
     #in decenttralized architecture, each camera performs detection and tracking 
-    l = launcher(agenttype="decentralized", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast, QtoHardwareManager=hardware_manager.QtoHardwareManager)
+    l = launcher(agenttype="car", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast, QtoHardwareManager=hardware_manager.QtoHardwareManager)
     hardware_manager.add(l)
     threading.Thread(target=l.launch, args=()).start()
     

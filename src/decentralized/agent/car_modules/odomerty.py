@@ -1,6 +1,6 @@
 
 from numpy import pi, cos, sin
-from spi_helper import spi_ask, bytes_to_int
+from agent.car_modules.spi_helper import spi_ask, bytes_to_int
 from usefull import limit_angle
 
 radius = 0.023

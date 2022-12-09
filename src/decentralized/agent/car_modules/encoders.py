@@ -1,6 +1,6 @@
 from time import time
 from numpy import pi
-from spi_helper import spi_ask, bytes_to_int
+from agent.car_modules.spi_helper import spi_ask, bytes_to_int
 
 
 class encoders:

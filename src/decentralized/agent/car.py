@@ -5,10 +5,11 @@ from agent.agent import Agent
 from dijkstra import Graph, DijkstraSPF
 
 #import for car 
-from car.encoders import encoders
-from car.low_level import Motor
-from car.odomerty import odometers
-from car.middle_level import compute_speed
+from agent.car_modules.encoders import encoders
+from agent.car_modules.low_level import Motor
+from agent.car_modules.odomerty import odometers
+from agent.car_modules.middle_level import compute_speed
+#import valid only on car
 import RPi.GPIO as GPIO
 import spidev
 
