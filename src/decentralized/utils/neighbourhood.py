@@ -70,7 +70,7 @@ class neighbourhood:
         """
         cars = []
         self.lockCluster.acquire()
-        for c in self.cluster:
+        for c in self.cluster.values():
             if c.agenttype == "car":
                 cars.append(c)
         self.lockCluster.release()

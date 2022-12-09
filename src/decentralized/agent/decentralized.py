@@ -205,6 +205,6 @@ class decentralized(Agent):
                         "spec" : {"x" : global_x,
                         "y" : global_y}}
                 logging.debug("car localisation is : {}".format(msg))
-                self.dicqueue.Qtosendunicast(msg)
+                self.dicqueue.Qtosendunicast.put(msg)
                             
 
