@@ -145,7 +145,7 @@ class decentralized(Agent):
 
             #####################################################local Kalman filter
             objects = []
-            for bb in det.bboxes:
+            for bb, class_ID in zip(det.bboxes, det.class_IDs):
                 center_pos_x = (bb[0]+bb[2])/2
                 center_pos_y = (bb[1]+bb[3])/2
                 #tranformation to global coordinate
@@ -157,8 +157,9 @@ class decentralized(Agent):
                         "destination" : "my_globalKF",
                         "method" : "localKF",
                         "spec" : {"local_x" : local_x,
-                                        "local_y" : local_y, 
-                                        "local_time" : det_time}}
+                                    "local_y" : local_y, 
+                                    "local_time" : det_time,
+                                      "class_ID" : str(class_ID)}}
                 self.dicqueue.QtoglobalKF.put(msg)
                 #send prediction from local KF to all neighbour's global kalman filter
                 for neighbour in self.neighbourhood.get_all_neighbours():
@@ -167,7 +168,8 @@ class decentralized(Agent):
                     "method" : "localKF",
                     "spec" : {"local_x" : local_x,
                                     "local_y" : local_y, 
-                                    "local_time" : det_time}}
+                                    "local_time" : det_time,
+                                      "class_ID" : str(class_ID)}}
                     self.dicqueue.Qtosendunicast.put(msg)
             
             ####################################################Display video
@@ -195,6 +197,7 @@ class decentralized(Agent):
             local_x = msg["spec"]["local_x"]
             local_y = msg["spec"]["local_y"]
             local_time = msg["spec"]["local_time"]
+            class_ID = msg["spec"]["class_ID"]
             global_x, global_y = self.global_KF.process_kalman(local_x, local_y, local_time)
 
             #################################################Send global estimate  
@@ -203,8 +206,8 @@ class decentralized(Agent):
                         "destination" : car.__dict__,
                         "method" : "positionCar",
                         "spec" : {"x" : global_x,
-                        "y" : global_y}}
-                logging.debug("car localisation is : {}".format(msg))
+                                   "y" : global_y,
+                                   "class_ID" : str(class_ID)}}
                 self.dicqueue.Qtosendunicast.put(msg)
                             
 
