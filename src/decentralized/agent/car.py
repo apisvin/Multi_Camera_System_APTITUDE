@@ -100,6 +100,12 @@ class car(Agent):
                     self.odos.update() #to update theta
                 else: #anything else is a obstacle
                     obstacle = [ float(msg["spec"]["x"])/100, float(msg["spec"]["y"])/100 ]
+                    n1, n2 = self.two_nearest_nodes(self.graph, position, obstacle)
+                    if self.graph.value(n1,n2) != np.Infinity: #path exists
+                        logging.debug("no more edge between {} and {}".format(n1, n2))
+                        self.graph.modify_weight(n1, n2, np.Infinity)
+                    else: #obstacle already there, refresh age
+                        self.graph.refresh_edge(n1, n2)
             except:
                 #no information from camers -> take odometers 
                 self.odos.update()
@@ -117,13 +123,7 @@ class car(Agent):
 
             # Compute distance to target and fetch next one
             d = (errX)**2 + (errY)**2
-            if d < 0.02:
-                # TODO compute dijkstra after modifying the graph with obstacle avoidance
-                if obstacle is not None:
-                    print("obstacle computed in graph")
-                    n1, n2 = self.two_nearest_nodes(self.graph, position, obstacle)
-                    logging.debug("no more edge between {} and {}".format(n1, n2))
-                    self.graph.modify_weight(n1, n2, np.Infinity)
+            if d < 0.01:
                 previous_target = target
                 # Change of final target
                 if(previous_target == "I"):
@@ -132,9 +132,10 @@ class car(Agent):
                     final_target = "I"        
                 # Update actual target
                 print("start_node ", previous_target)
-                print("target_node ", target)
+                self.graph.update()
                 target = next_target(start_node=previous_target, target_node=final_target, graph=self.graph)
-
+                print("target_node ", target)
+            
 
     def two_nearest_nodes(self, graph, trad, obstacle):
         distances = {}

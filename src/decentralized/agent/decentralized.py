@@ -129,7 +129,7 @@ class decentralized(Agent):
         if self.display:
             cv2.namedWindow("result", cv2.WINDOW_FULLSCREEN)
         
-        Zoffset = 10
+        Zoffset = 18
         #aruco parameters
         arucoParams = cv2.aruco.DetectorParameters_create() #The ArUco parameters used for detection (unless you have a good reason to modify the parameters, the default parameters returned by cv2.aruco.DetectorParameters_create are typically sufficient)
         arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)    #The ArUco dictionary we are using. 50 unique aruco with 4x4 pixels
@@ -146,31 +146,45 @@ class decentralized(Agent):
             #####################################################local Kalman filter
             objects = []
             for bb, class_ID in zip(det.bboxes, det.class_IDs):
-                center_pos_x = (bb[0]+bb[2])/2
-                center_pos_y = (bb[1]+bb[3])/2
-                #tranformation to global coordinate
-                point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
-                #perform local kalman filter
-                local_x, local_y = self.local_KF.process_kalman(float(point3D.x), float(point3D.y), det_time)
-                #send prediction from local KF to global kalman filter
-                msg = {"source" : self.neighbourhood.myself.__dict__,
-                        "destination" : "my_globalKF",
+                if class_ID == 0: #detected object is the car -> need tracking 
+                    center_pos_x = (bb[0]+bb[2])/2
+                    center_pos_y = (bb[1]+bb[3])/2
+                    #tranformation to global coordinate
+                    point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
+                    #perform local kalman filter
+                    local_x, local_y = self.local_KF.process_kalman(float(point3D.x), float(point3D.y), det_time)
+                    #send prediction from local KF to global kalman filter
+                    msg = {"source" : self.neighbourhood.myself.__dict__,
+                            "destination" : "my_globalKF",
+                            "method" : "localKF",
+                            "spec" : {"local_x" : local_x,
+                                        "local_y" : local_y, 
+                                        "local_time" : det_time,
+                                          "class_ID" : str(class_ID)}}
+                    self.dicqueue.QtoglobalKF.put(msg)
+                    #send prediction from local KF to all neighbour's global kalman filter
+                    for neighbour in self.neighbourhood.get_all_neighbours():
+                        msg = {"source" : self.neighbourhood.myself.__dict__,
+                        "destination" : neighbour.__dict__,
                         "method" : "localKF",
                         "spec" : {"local_x" : local_x,
-                                    "local_y" : local_y, 
-                                    "local_time" : det_time,
-                                      "class_ID" : str(class_ID)}}
-                self.dicqueue.QtoglobalKF.put(msg)
-                #send prediction from local KF to all neighbour's global kalman filter
-                for neighbour in self.neighbourhood.get_all_neighbours():
-                    msg = {"source" : self.neighbourhood.myself.__dict__,
-                    "destination" : neighbour.__dict__,
-                    "method" : "localKF",
-                    "spec" : {"local_x" : local_x,
-                                    "local_y" : local_y, 
-                                    "local_time" : det_time,
-                                      "class_ID" : str(class_ID)}}
-                    self.dicqueue.Qtosendunicast.put(msg)
+                                        "local_y" : local_y, 
+                                        "local_time" : det_time,
+                                          "class_ID" : str(class_ID)}}
+                        self.dicqueue.Qtosendunicast.put(msg)
+                else: #detected object is an obstacle -> no need tracking, only detection
+                    for car in self.neighbourhood.get_cars():
+                        center_pos_x = (bb[0]+bb[2])/2
+                        center_pos_y = (bb[1]+bb[3])/2
+                        point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
+                        msg = {"source" : self.neighbourhood.myself.__dict__,
+                                "destination" : car.__dict__,
+                                "method" : "positionCar",
+                                "spec" : {"x" : float(point3D.x),
+                                           "y" : float(point3D.y),
+                                           "class_ID" : str(class_ID)}}
+                        
+                        self.dicqueue.Qtosendunicast.put(msg)
             
             ####################################################Display video
             if self.display:
