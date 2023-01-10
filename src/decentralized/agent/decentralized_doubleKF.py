@@ -16,115 +16,48 @@ from  pytb.tracking.tracking_manager import TrackingManager
 
 class kalman():
     
-    def __init__(self, dim_x=4, dim_z=2, dim_u=0):
-        """Asynchronnous decentralized kalman filter"""
-        if dim_x < 1:
-            raise ValueError('dim_x must be 1 or greater')
-        if dim_z < 1:
-            raise ValueError('dim_z must be 1 or greater')
-        if dim_u < 0:
-            raise ValueError('dim_u must be 0 or greater')
+    def __init__(self):
+        self.time = 0
+        self.dt = 0.2                                   #interval of time between 2 observations
+        self.KF = KalmanFilter(dim_x=4, dim_z=2)        #Kalman filter from filterpy 
+        self.KF.x = np.array([0., 0., 0., 0.])          # initial state (location, velocity)
+        self.KF.F = np.array([[1.,0., self.dt, 0.],
+                                [0.,1., 0., self.dt],
+                                [0.,0., 1., 0.],
+                                [0.,0., 0., 1.]])       # state transition matrix
+        self.KF.H = np.array([[1.,0., 0., 0.],
+                                [0.,1., 0., 0.]])       # Measurement function (only position)
+        self.KF.P *= 30.                                # covariance matrix (already define as np.eye(dim_x))
+        self.KF.R = np.array([[1.,0.],
+                                [0., 1.]])              # state uncertainty
+        self.KF.Q = np.eye(4)*0.1
+        self.state = self.KF.x                          # state of the traget
+        self.estimate = []
+             
+    def process_kalman(self, x, y, time):
+        if time==0: #first observation
+            self.time=time
+            self.KF.x = np.array([x, y, 0., 0.]) #initial state
+        else:
+            self.dt = time-self.time
+            self.KF.F = np.array([[1.,0., self.dt, 0.],
+                                [0.,1., 0., self.dt],
+                                [0.,0., 1., 0.],
+                                [0.,0., 0., 1.]])
+            self.KF.Q = np.eye(4)*self.dt
+            self.KF.predict()
+            obs = np.array([x, y])
+            self.KF.update(obs)
+            self.time = time
+        return [self.KF.x[0], self.KF.x[1]]
 
-        self.dim_x = dim_x
-        self.dim_z = dim_z
-        self.dim_u = dim_u
-
-
-        self.x = np.zeros((dim_x, 1))        # state
-        self.P = np.eye(dim_x)               # uncertainty covariance
-        self.Q = np.eye(dim_x)               # process uncertainty
-        self.F = np.eye(dim_x)               # state transition matrix
-        self.H = np.zeros((dim_z, dim_x))    # Measurement function
-        self.R = np.eye(dim_z)               # state uncertainty
-        self.M = np.zeros((dim_z, dim_z)) # process-measurement cross correlation
-        self.z = np.array([[None]*self.dim_z]).T
-
-        # gain and residual are computed during the innovation step. We
-        # save them so that in case you want to inspect them for various
-        # purposes
-        self.W = np.zeros((dim_x, dim_z)) # kalman gain
-        self.y = np.zeros((dim_z, 1))
-        self.S = np.zeros((dim_z, dim_z)) # system uncertainty
-        self.SI = np.zeros((dim_z, dim_z)) # inverse system uncertainty
-
-        # identity matrix. Do not alter this.
-        self._I = np.eye(dim_x)
-
-        # these will always be a copy of x,P after predict() is called
-        self.x_prior = self.x.copy()
-        self.P_prior = self.P.copy()
-
-        # these will always be a copy of x,P after update() is called
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
-
-        self.inv = np.linalg.inv
-
-        # time variable 
-        self.t = 0          # time derived from internal clock when a measurement is received
-        self.tau = 0        # time of the last update()
+    def get_estimate(self):
+        return np.array(self.estimate)
 
 
-    def predict(self):
-        """
-        Predict next state (prior) using the Kalman filter state propagation
-        equations.
-        """
+
+
         
-        # compute transition matrix F 
-        self.t = time.time()
-        self.dt = self.t - self.tau
-        self.F = np.array([[1.,0., self.dt, 0.],
-                            [0.,1., 0., self.dt],
-                            [0.,0., 1., 0.],
-                            [0.,0., 0., 1.]])       # state transition matrix
-
-        self.x = np.dot(self.F, self.x)
-        self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q
-
-        self.x_prior = self.x.copy()
-        self.P_prior = self.P.copy()
-
-    def update(self, z):
-        """
-        Add a new measurement (z) to the Kalman filter.
-        """
-        self.y = z - np.dot(self.H, self.x_prior)      #error (residual) between measurement and prediction
-        
-        Pinv = self.inv(self.P) + np.dot(self.H.T, np.dot(self.inv(self.R), self.H))
-        self.P = self.inv(Pinv)
-        #kalman gain computation
-        self.W = np.dot(self.P, np.dot(self.H.T, self.inv(self.R)))
-
-        self.x = self.x_prior + np.dot(self.W, self.y)
-        self.tau = time.time() #time of last update
-
-        self.x_post = self.x.copy()
-        self.P_post = self.P.copy()
-
-
-    def assimilation(self, VEI, SEI):
-        """
-        Assimilation of the VEI (Variance Error Info) and the SEI (State Error Info) from node j 
-        A prediction step is done before
-        """
-
-        Pinv = self.inv(self.P_prior) + VEI
-        self.P = self.inv(Pinv)
-
-        self.x = np.dot(self.P, np.dot(self.inv(self.P_prior), self.x_prior) + SEI)
-
-
-    def get_error_info(self, z):
-        """
-        return State Error Info and Variance Error Info to send to other nodes
-        """
-        SEI = np.dot(self.H.T, np.dot(self.inv(self.R), z))
-        VEI = np.dot(self.H.T, np.dot(self.inv(self.R), self.H))
-        return SEI, VEI
-        
-
-
 
 class decentralized(Agent):
     
@@ -143,17 +76,16 @@ class decentralized(Agent):
         self.dicqueue = dicqueue
         self.neighbourhood = neighbourhood
         self.display = display
-        self.distributed_KF = kalman()
-        self.distributed_KF.H = np.array([[1.,0., 0., 0.],
-                                            [0.,1., 0., 0.]])       # Measurement function (only position)
+        self.local_KF = kalman()
+        self.global_KF = kalman()
         
     def launch(self):
-        threading.Thread(target=self.detection, args=()).start()
+        threading.Thread(target=self.detection_localKF, args=()).start()
         threading.Thread(target=self.globalKF, args=()).start()
 
 
 
-    def detection(self):
+    def detection_localKF(self):
         #create calib class from calibration image 
         image = cv2.imread('src/image_calibration.png')
         aruco_3D = np.array([[0.,0.,0.],
@@ -173,9 +105,16 @@ class decentralized(Agent):
                 "proc":{
                     "task": "detection",
                     "output_type": "bboxes2D",
-                    "model_type": "Aruco",
-                    "pref_implem": "Aruco",
+                    "model_type": "YOLO5",
+                    "pref_implem": "torch-Ultralytics",
                     "params": {
+                        "model_path": "C:/Users/Aurora/innovillage-carCounting/models/yolov5n-mio.pt",
+                        "input_width" : 416,
+                        "input_height" : 416,
+                        "conf_thresh": 0.25,
+                        "nms_across_classes": True,
+                        "nms_thresh": 0,
+                        "GPU": True
                     }
                 },
                 "preproc":{
@@ -191,6 +130,35 @@ class decentralized(Agent):
                     }
                 }
             }
+        {
+            "proc":{
+                "task": "detection",
+                "output_type": "bboxes2D",
+                "model_type": "BackgroundSubtractor",
+                "pref_implem": "frame_diff_2",
+                "params": {
+                    "contour_thresh": 3,
+                    "intensity": 50,
+                    "max_last_images": 30
+                }
+            },
+            "preproc":{
+                "resize":{
+                    "width" : 416,
+                    "height": 416
+                }
+            },
+            "postproc":{
+                "nms": {
+                    "pref_implem" : "Malisiewicz",
+                    "nms_thresh" : 0.45
+                },
+                "max_height": 0.99,
+                "min_height": 0.2,
+                "max_width": 0.99,
+                "min_width": 0.2
+            }
+        }
         detect1_proc = config_aruco['proc']
         detect1_preproc = config_aruco['preproc']
         detect1_postproc = config_aruco['postproc']
@@ -213,6 +181,9 @@ class decentralized(Agent):
             cv2.namedWindow("result", cv2.WINDOW_FULLSCREEN)
         
         Zoffset = 18
+        #aruco parameters
+        arucoParams = cv2.aruco.DetectorParameters_create() #The ArUco parameters used for detection (unless you have a good reason to modify the parameters, the default parameters returned by cv2.aruco.DetectorParameters_create are typically sufficient)
+        arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)    #The ArUco dictionary we are using. 50 unique aruco with 4x4 pixels
         #begin loop 
         ret, frame = cap.read()
         start = time.time()
@@ -231,17 +202,27 @@ class decentralized(Agent):
                     center_pos_y = (bb[1]+bb[3])/2
                     #tranformation to global coordinate
                     point3D = calib.project_2D_to_3D(Point2D(int(center_pos_x), int(center_pos_y)), Z = Zoffset)
-                    z = np.array([[point3D.x], [point3D.y]])
-                    
-                    #send observation to decentralized kalman filter
+                    #perform local kalman filter
+                    local_x, local_y = self.local_KF.process_kalman(float(point3D.x), float(point3D.y), det_time)
+                    #send prediction from local KF to global kalman filter
                     msg = {"source" : self.neighbourhood.myself.__dict__,
-                            "destination" : "my_KF",
-                            "method" : "detection",
-                            "spec" : {"local_x" : z[0],
-                                        "local_y" : z[1], 
-                                        "class_ID" : str(class_ID)}}
+                            "destination" : "my_globalKF",
+                            "method" : "localKF",
+                            "spec" : {"local_x" : local_x,
+                                        "local_y" : local_y, 
+                                        "local_time" : det_time,
+                                          "class_ID" : str(class_ID)}}
                     self.dicqueue.QtoglobalKF.put(msg)
-                    
+                    #send prediction from local KF to all neighbour's global kalman filter
+                    for neighbour in self.neighbourhood.get_all_neighbours():
+                        msg = {"source" : self.neighbourhood.myself.__dict__,
+                        "destination" : neighbour.__dict__,
+                        "method" : "localKF",
+                        "spec" : {"local_x" : local_x,
+                                        "local_y" : local_y, 
+                                        "local_time" : det_time,
+                                          "class_ID" : str(class_ID)}}
+                        self.dicqueue.Qtosendunicast.put(msg)
                 else: #detected object is an obstacle -> no need tracking, only detection
                     for car in self.neighbourhood.get_cars():
                         center_pos_x = (bb[0]+bb[2])/2
@@ -255,7 +236,6 @@ class decentralized(Agent):
                                            "class_ID" : str(class_ID)}}
                         
                         self.dicqueue.Qtosendunicast.put(msg)
-                    
             
             ####################################################Display video
             if self.display:
@@ -279,30 +259,21 @@ class decentralized(Agent):
 
     def globalKF(self):
         while self.stopFlag.is_set()==False:
+            #################################################Process global kalman with local estimates
             msg = self.dicqueue.QtoglobalKF.get()
+            local_x = msg["spec"]["local_x"]
+            local_y = msg["spec"]["local_y"]
+            local_time = msg["spec"]["local_time"]
+            class_ID = msg["spec"]["class_ID"]
+            global_x, global_y = self.global_KF.process_kalman(local_x, local_y, local_time)
 
-            if msg["destination"] == "my_KF":
-                #perform kalman filter with its own measurements
-                self.distributed_KF.predict()
-                z = np.array([[float(msg["spec"]["local_x"])], [float(msg["spec"]["local_y"])]])
-                self.distributed_KF.update(z)
-                print(self.distributed_KF.x)
+            #################################################Send global estimate  
+            for car in self.neighbourhood.get_cars():
+                msg = {"source" : self.neighbourhood.myself.__dict__,
+                        "destination" : car.__dict__,
+                        "method" : "positionCar",
+                        "spec" : {"x" : global_x,
+                                   "y" : global_y,
+                                   "class_ID" : str(class_ID)}}
+                self.dicqueue.Qtosendunicast.put(msg)
 
-                #communicate state error info and variance error info to all other neighbours
-                SEI, VEI = self.distributed_KF.get_error_info(z)
-                for neighbour in self.neighbourhood.get_all_neighbours():
-                    msg = {"source" : self.neighbourhood.myself.__dict__,
-                    "destination" : neighbour.__dict__,
-                    "method" : "ErrorInfo",
-                    "spec" : {"SEI" : SEI,
-                                "VEI" : VEI, 
-                                "state" : self.distributed_KF.x}}
-                    self.dicqueue.Qtosendunicast.put(msg)
-
-            #################################################get error info from other nodes
-            else:
-                state = msg["spec"]["state"]
-                SEI = msg["spec"]["SEI"]
-                VEI = msg["spec"]["VEI"]
-                #TODO: association based on state if multiple tragets
-                self.distributed_KF.assimilation(VEI, SEI)

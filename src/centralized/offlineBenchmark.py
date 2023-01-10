@@ -113,16 +113,15 @@ def main():
                 - time in second to wait 
     """
     timeline = [["ADD", 0, "tracker", "tracker", 1, ""],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/SE"],
-                ["WAIT", 120],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/N"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/NW"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/S"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/SW"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/E"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/W"],
-                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/videos/NE"],
-                ["WAIT", 200],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/SE"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/N"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/NW"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/S"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/SW"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/E"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/W"],
+                ["ADD", 1, "", "offlineDetector", 0, "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/NE"],
+                ["WAIT", 300],
                 ["REMOVE", 0]]
     start_timeline(timeline)
 

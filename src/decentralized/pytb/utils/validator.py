@@ -320,7 +320,7 @@ def _validate_yolo5_parameters(det_params: dict) -> bool:
 def _validate_backgroundsubtractor_parameters(det_params: dict) -> bool:
     valid = True
 
-    if det_params["pref_implem"] not in ["mean", "median", "frame_diff"]:
+    if det_params["pref_implem"] not in ["mean", "median", "frame_diff", "frame_diff_2"]:
         log.error("Unknown implementation of BackgroundSubtractor: {}".format(det_params["pref_implem"]))
         valid = False
 

@@ -16,6 +16,7 @@ from utils.neighbourhood import *
 from utils.hardware_manager import *
 from GUI.GUI import *
 import logging
+import cv2
 
 #configuration logging
 logging.basicConfig(level=logging.DEBUG)
@@ -69,6 +70,16 @@ def main():
     l = launcher(agenttype="decentralized", Qtosendunicast=Qtosendunicast, Qtosendbroadcast=Qtosendbroadcast, QtoHardwareManager=hardware_manager.QtoHardwareManager)
     hardware_manager.add(l)
     threading.Thread(target=l.launch, args=()).start()
+
+    while True:
+        k = cv2.waitKey(1) & 0xFF
+        if k == ord('p'):  # pause/play loop if 'p' key is pressed
+            is_paused = not is_paused
+        if k == ord('q'):  # end video loop if 'q' key is pressed
+            l.stopFlag.set() #stop thread
+            break
+
+    
     
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 Copyright (c) 2021-2022 UCLouvain, ICTEAM
 Licensed under GPL-3.0 [see LICENSE for details]
 Written by Jonathan Samelson (2021-2022)
+Modified by Arthur Pisvin (2022)
 """
 
 from pytb.detection.bboxes.bboxes_2d_detector.bboxes_2d_detector import BBoxes2DDetector
@@ -14,6 +15,7 @@ import logging
 
 log = logging.getLogger("aptitude-toolbox")
 
+BINARY_THRESHOLD_ABOVE_50PC_OF_HISTOGRAM = 18  # 24 # The threshold in the graysale image for deciding if a deviation from the background is an object or not, relative to the point in the histogram under which 50 percent of total intensity can be found
 
 class BackgroundSubtractor(BBoxes2DDetector):
 
@@ -41,6 +43,12 @@ class BackgroundSubtractor(BBoxes2DDetector):
         elif self.pref_implem == "frame_diff":
             # If the pref_implem is "frame_diff", the results will be solely based on the previous image.
             self.prev_image = None
+
+        elif self.pref_implem == "frame_diff_2":
+            self.max_last_images = proc_parameters["params"].get("max_last_images", 100)
+            self.last_images = []
+            self.background = []
+            self.counter_images = 0
 
         else:
             assert False, "[ERROR] Unknown implementation of BackgroundSubtractor: {}".format(self.pref_implem)
@@ -90,12 +98,50 @@ class BackgroundSubtractor(BBoxes2DDetector):
                 img_sub = np.where(foreground_image > self.intensity, frame_gray, np.array([0], np.uint8))
                 self.prev_image = frame_gray
 
+        elif self.pref_implem == "frame_diff_2":
+            if self.background == []: #first iterations, no background
+                self.last_images.append(frame_gray)
+                if len(self.last_images) >= self.max_last_images:
+                    self.background = np.median(np.array(self.last_images), axis=0).astype(np.uint8)
+                    print("background computed")
+
+            else: #background exists and self.last_images is full
+                self.last_images.pop(0)
+                self.last_images.append(frame_gray)
+                """
+                if self.counter_images > self.max_last_images: #recompute background
+                    self.background = np.median(np.array(self.last_images), axis=0).astype(np.uint8)
+                    print("background computed")
+                    cv2.imshow("background", self.background)
+                    self.counter_images = 0
+                """
+                #dynamic background
+                self.background = np.median(np.array(self.last_images), axis=0).astype(np.uint8)
+                cv2.imshow("background", self.background)
+
+                frame_background_removed = cv2.absdiff(self.background, frame_gray)
+                blur_frame_background_removed = cv2.blur(frame_background_removed, (10, 10))
+                hist_item = cv2.calcHist([blur_frame_background_removed], [0], None, [256], [0, 256])
+                binary_threshold = np.argwhere(np.abs(np.cumsum(hist_item)-0.50*np.cumsum(hist_item)[-1]) == np.min(np.abs(np.cumsum(hist_item)-0.50*np.cumsum(hist_item)[-1])))[0][0] + BINARY_THRESHOLD_ABOVE_50PC_OF_HISTOGRAM
+                ret, img_sub = cv2.threshold(blur_frame_background_removed, binary_threshold, 255, cv2.THRESH_BINARY)  # Making the-background removed image binary
+                cv2.imshow("blur_frame_background_removed", blur_frame_background_removed)
+                
+                self.counter_images+=1
+                
+                
+
         else:
             assert False, "[ERROR] Unknown implementation of BackgroundSubtractor: {}".format(self.pref_implem)
 
         bboxes = []
         # Find the contours of different objects that can be seen in the foreground image.
         contours = cv2.findContours(img_sub, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if img_sub is not None:
+            for i in range(len(contours[0])):
+                if contours[1][0, i, 3] == -1:
+                    x, y, w, h = cv2.boundingRect(contours[0][i])
+                    frame = cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 1)
+            cv2.imshow("contours with hierarchy", frame)
         for cont in contours[0]:
             poly = cv2.approxPolyDP(cont, self.contour_thresh, True)
             x, y, w, h = cv2.boundingRect(poly)

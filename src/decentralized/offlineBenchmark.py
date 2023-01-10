@@ -107,31 +107,26 @@ def main():
     3. ["WAIT", time]
                 - time in second to wait 
     """
-    timeline = [["ADD", 0,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/N"],
-                ["ADD", 1,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/NE"],
-                ["ADD", 2,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/E"],
-                ["WAIT", 120],
-                ["ADD", 3,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/SE"],
-                ["ADD", 4,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/S"],
-                ["ADD", 5,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/SW"],
-                ["ADD", 6,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/W"],
-                ["ADD", 7,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/decentralized/videos/NW"],
-                ["WAIT", 60],
+    timeline = [["ADD", 0,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/N"],
+                ["ADD", 1,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/NE"],
+                ["ADD", 2,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/E"],
+                ["ADD", 3,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/SE"],
+                ["ADD", 4,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/S"],
+                ["ADD", 5,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/SW"],
+                ["ADD", 6,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/W"],
+                ["ADD", 7,  "offlineDecentralized", "C:/Users/Aurora/Multi_Camera_System_APTITUDE/local_data/centralized/videos/NW"],
+                ["WAIT", 300],
+                ["REMOVE", 0],
+                ["REMOVE", 1],
+                ["REMOVE", 2],
                 ["REMOVE", 3],
                 ["REMOVE", 4],
                 ["REMOVE", 5],
                 ["REMOVE", 6],
-                ["REMOVE", 7],
-                ["WAIT", 140],
-                ["REMOVE", 0],
-                ["REMOVE", 1],
-                ["REMOVE", 2],]
+                ["REMOVE", 7],]
     start_timeline(timeline)
 
     
-
-
-
 
 
 if __name__ == "__main__":
